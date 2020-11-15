@@ -1,13 +1,14 @@
 /******************************************************************************
  *
- * @file			kalman.h
+ * @file		kalman.h
  * @brief		Contains the definition of a Kalman filter optimized for ARM
- *               devices, it is based on the following page (www.kalmanfilter.net)
+ *              devices, it is based on the following page 
+ *              (www.kalmanfilter.net)
  * @version		v1.00f00
- * @date			10. Aug. 2020
+ * @date		10. Aug. 2020
  * @author		CECCARELLI, Federico    (fededc88@gmail.com)
- *               MOYA, Martin            (moyamartin1@gmail.com)
- *               SANTOS, Lucio           (lusho2206@gmail.com)
+ *              MOYA, Martin            (moyamartin1@gmail.com)
+ *              SANTOS, Lucio           (lusho2206@gmail.com)
  * @copyright	GPL license
  *
  *******************************************************************************/
