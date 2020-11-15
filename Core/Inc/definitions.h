@@ -10,10 +10,16 @@
 
 #ifndef TRUE
 #define TRUE 1
-#endif
+#endif /* TRUE */
 
 #ifndef FALSE
 #define FALSE 0
-#endif
+#endif /* FALSE */
+
+#ifdef DEBUG
+#define DEBUG(x) printf
+#else
+#define DEBUG(x)
+#endif /* DEBUG */
 
 #endif /* INC_DEFINITIONS_H_ */
