@@ -14,6 +14,9 @@
 #ifndef _FIND_H_
 #define _FIND_H_
 
+#include <stdint.h>
+#include "arm_math.h"
+
 /**
  *	@fn				find_closest_value_f32
  *	@brief  		Find the closest index of a needle inside a haysack 
@@ -25,7 +28,7 @@
  *					(length of the array)
  *	@returns		returns the index where the value has been found	
  */
-uint32_t find_closest_value_f32(float32_t needle, float32_t haysack, 
+uint32_t find_closest_value_f32(float32_t needle, const float32_t * haysack, 
 								size_t size_of_haysack);
 
 /**
@@ -39,6 +42,6 @@ uint32_t find_closest_value_f32(float32_t needle, float32_t haysack,
  *	@returns		returns the index of the closest value
  */
 uint32_t get_closest_index_f32(float32_t target, uint32_t index_a, 
-							   uint32_t index_b, float32_t haysack);
+							   uint32_t index_b, const float32_t * haysack);
 
 #endif
