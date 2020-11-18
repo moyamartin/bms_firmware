@@ -13,11 +13,12 @@
 #
 MAKEFILE_DIR=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 PROJECT_DIR=$(realpath $(MAKEFILE_DIR)..)
-TEST_DIR=./
-CPPUTEST_HOME=./cpputest
+TEST_DIR=
+CPPUTEST_HOME=cpputest
 
 # project source files path
-SRC_DIRS=$(PROJECT_DIR)
+SRC_FILES=$(PROJECT_DIR)/Core/Src/find.c
+SRC_DIRS=
 
 # project header files path
 INCLUDE_DIRS=$(PROJECT_DIR)/Core/Inc \
@@ -30,8 +31,11 @@ INCLUDE_DIRS=$(PROJECT_DIR)/Core/Inc \
 # add code coverage
 CPPUTEST_USE_GCOV=Y
 
+# specify objs dir
+CPPUTEST_OBJS_DIR=objs
+
 ## specify where the test code is located
-TEST_SRC_DIRS =./src
+TEST_SRC_DIRS=src
 
 ## what to call the test binary
 TEST_TARGET=bms_test

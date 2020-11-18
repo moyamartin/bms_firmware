@@ -1,7 +1,9 @@
 #include "CppUTest/TestHarness.h"
+extern "C"{
 #include "find.h"
+}
 
-#define SAMPLE_SOCS
+#define SAMPLE_SOCS 55
 
 const float32_t soc_lut[55] = {
 	(float32_t) 0.998550201961916, (float32_t) 0.995643392960185, 
@@ -52,7 +54,7 @@ const float32_t values_to_find[55][2] = {
 	 {(float32_t) 0.089, 47}, {(float32_t) 0.0048, 53},{(float32_t) 0.002, 54}, 
 	 {(float32_t) 0.046, 52}, {(float32_t) 0.996, 1},  {(float32_t) 0.989, 2}, 
 	 {(float32_t) 0.977, 3},  {(float32_t) 0.945, 4},  {(float32_t) 0.943, 5},  
-	 {(float32_t) 0.997, 0}
+	 {(float32_t) 0.998, 0}
 };
 
 // create a test group

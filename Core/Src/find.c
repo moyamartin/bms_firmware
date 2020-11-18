@@ -3,7 +3,7 @@
 uint32_t find_closest_value_f32(float32_t needle, const float32_t * haysack, 
 							    size_t size_of_haysack)
 {
-	uint32_t start = 0, end = size_of_haysack - 1, mid;
+	uint32_t start = 0, end = (uint32_t) size_of_haysack - 1, mid;
 	/*
 	 * if the needle is less or equal than the last value of the haysack
 	 * then return that index
@@ -38,7 +38,7 @@ uint32_t find_closest_value_f32(float32_t needle, const float32_t * haysack,
 		}
 	}
 	// if not found return size
-	return size_of_haysack;
+	return (uint32_t) size_of_haysack;
 }
 
 uint32_t get_closest_index_f32(float32_t target, uint32_t index_a, 
