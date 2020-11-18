@@ -1,7 +1,6 @@
 #ifndef AUXILIARY_MATH_H_
 #define AUXILIARY_MATH_H_
 
-#include "stm32f407xx.h"
 #include <stdint.h>
 #include "arm_math.h"
 

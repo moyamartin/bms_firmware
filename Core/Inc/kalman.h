@@ -15,7 +15,6 @@
 #ifndef KALMAN_H
 #define KALMAN_H
 
-#include "stm32f4xx_hal.h"
 #include "arm_math.h"
 #include "definitions.h"
 #include <stdint.h>
@@ -131,6 +130,6 @@ uint8_t kalman_filter_init(struct KalmanFilter * kalman_filter,
  *  @returns    kalman_filter_status
  */
 kalman_filter_status kalman_filter_step(struct KalmanFilter *kalman_filter, 
-		float32_t *u);
+		const float32_t *u);
 
 #endif /* KALMAN_H */

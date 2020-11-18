@@ -382,7 +382,7 @@ uint8_t kalman_filter_init(struct KalmanFilter * kalman_filter,
 }
 
 kalman_filter_status kalman_filter_step(struct KalmanFilter *kalman_filter, 
-		float32_t * measurement)
+		const float32_t * measurement)
 {
     /* Time Update */
     // Extrapolate the state of the system based on the current state and 

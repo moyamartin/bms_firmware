@@ -1,4 +1,0 @@
-File '/home/mmoya/Projects/bms_unr/bms_firmware/Core/Src/find.c'
-Lines executed:86.96% of 23
-Creating 'find.c.gcov'
-
