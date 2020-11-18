@@ -17,7 +17,8 @@ TEST_DIR=
 CPPUTEST_HOME=cpputest
 
 # project source files path
-SRC_FILES=$(PROJECT_DIR)/Core/Src/find.c
+SRC_FILES=$(PROJECT_DIR)/Core/Src/find.c \
+		  $(PROJECT_DIR)/Core/Src/kalman.c
 SRC_DIRS=
 
 # project header files path
@@ -26,7 +27,8 @@ INCLUDE_DIRS=$(PROJECT_DIR)/Core/Inc \
 			 $(PROJECT_DIR)/Drivers/CMSIS/DSP/Include \
 			 $(PROJECT_DIR)/Drivers/CMSIS/Device/ST/STM32F4xx/Include \
 			 $(PROJECT_DIR)/Drivers/CMSIS/Include \
-			 $(CPPUTEST_HOME)/include/
+			 $(CPPUTEST_HOME)/include/ \
+			 $(PROJECT_DIR)/Test/inc
 
 # add code coverage
 CPPUTEST_USE_GCOV=Y
