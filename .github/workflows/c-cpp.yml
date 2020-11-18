@@ -61,8 +61,6 @@ jobs:
         uses: fiam/arm-none-eabi-gcc@v1
         with:
           release: '9-2019-q4' # The arm-none-eabi-gcc release to use.
-      - name: Change to main dir
-        run: cd ..
       - name: build
         run: make
        
