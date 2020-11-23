@@ -1,9 +1,49 @@
 #ifndef KALMAN_MEASUREMENTS_H
 #define KALMAN_MEASUREMENTS_H
 
-#define NUM_SAMPLES 144
+#define N_SAMPLES 144
+#define N_STATES 4
+#define N_OUTPUTS 4
+#define N_INPUTS 4
 
-const float32_t measurements[NUM_SAMPLES][4] = {
+const float32_t x_act_data_dummy[N_STATES] = {0.0f, 70.71067812f, 
+											  500.0f, 70.71067812f};
+
+const float32_t f_mat_data_dummy[N_STATES*N_STATES] = {1.0f, 0.1f, 0.0f, 0.0f, 
+													   0.0f, 1.0f, 0.0f, 0.0f, 
+													   0.0f, 0.0f, 1.0f, 0.1f,
+													   0.0f, 0.0f, 0.0f, 1.0f};
+
+const float32_t g_mat_data_dummy[N_STATES*N_INPUTS] = {0.0f, 0.0f, 0.0f, 0.0f,
+													   0.0f, 0.0f, 0.0f, 0.0f,
+													   0.0f, 0.0f, 1.0f, 0.0f,
+													   0.0f, 0.0f, 0.0f, 1.0f};
+
+const float32_t q_mat_data_dummy[N_STATES*N_STATES] = {0.0, 0.0, 0.0, 0.0,	
+													   0.0, 0.0, 0.0, 0.0, 
+													   0.0, 0.0, 0.0, 0.0,
+													   0.0, 0.0, 0.0, 0.0};
+
+const float32_t p_mat_actual_data_dummy[N_STATES*N_STATES] = 
+												   {1.0f, 0.0f, 0.0f, 0.0f,
+													0.0f, 1.0f, 0.0f, 0.0f,
+													0.0f, 0.0f, 1.0f, 0.0f,
+													0.0f, 0.0f, 0.0f, 1.0f};
+
+const float32_t h_mat_data_dummy[N_INPUTS*N_STATES] =  {1.0f, 0.0f, 0.0f, 0.0f,
+													    0.0f, 1.0f, 0.0f, 0.0f,
+														0.0f, 0.0f, 1.0f, 0.0f,
+														0.0f, 0.0f, 0.0f, 1.0f
+};
+
+const float32_t r_mat_data_dummy[N_INPUTS*N_INPUTS] = {0.2f, 0.0f, 0.0f, 0.0f, 
+													   0.0f, 0.2f, 0.0f, 0.0f, 
+													   0.0f, 0.0f, 0.2f, 0.0f, 
+													   0.0f, 0.0f, 0.0f, 0.2f};
+
+const float32_t u_data_dummy[N_INPUTS] = {0.0f, 0.0f, -0.04905f, -0.981f};
+
+const float32_t measurements[N_SAMPLES][N_STATES] = {
 	{(float32_t)7.6868626,   (float32_t)70.7106781, (float32_t)31.8004220, 
 		(float32_t)70.7106781 },
 	{(float32_t)3.9121748,   (float32_t)70.7106781, (float32_t)-18.0786860,
@@ -294,7 +334,7 @@ const float32_t measurements[NUM_SAMPLES][4] = {
 		(float32_t)-69.5723219}
 };
 
-const float32_t filtered_data[NUM_SAMPLES][2] = {
+const float32_t filtered_data[N_SAMPLES][2] = {
 	{(float32_t)0,					(float32_t)500},
 	{(float32_t)7.58437248243732,	(float32_t)110.907774978138}, 
 	{(float32_t)9.75266208479884,	(float32_t)55.6857858426590},

@@ -31,12 +31,13 @@
 typedef enum
 {
 	KALMAN_SUCCESS = 0,
-	KALMAN_FAILED_EXTRAPOLATE_STATE = 1,
-	KALMAN_FAILED_EXTRAPOLATE_UNCERTAINTY = 2,
-	KALMAN_FAILED_GAIN_CALCULATION = 3,
-	KALMAN_FAILED_UPDATE_ESTIMATE = 4,
-	KALMAN_FAILED_UPDATE_UNCERTAINTY = 5,
-	KALMAN_FAILED_UPDATE_MEASUREMENT = 6
+	KALMAN_FAILED_EXTRAPOLATE_STATE,
+	KALMAN_FAILED_EXTRAPOLATE_UNCERTAINTY,
+	KALMAN_FAILED_GAIN_CALCULATION,
+	KALMAN_FAILED_UPDATE_ESTIMATE,
+	KALMAN_FAILED_UPDATE_UNCERTAINTY,
+	KALMAN_FAILED_UPDATE_MEASUREMENT,
+	KALMAN_FAILED_INIT
 } kalman_filter_status;
 
 /**
@@ -108,6 +109,12 @@ struct KalmanFilter
 	 */
 	float32_t id_mat_data[MATRIX_MAX_SIZE];
 	arm_matrix_instance_f32 id_mat;
+
+	/**
+	 *	@brief d_mat relates the input in the innovation part of the algorithm
+	 */
+	float32_t d_mat_data[MATRIX_MAX_SIZE];
+	arm_matrix_instance_f32 d_mat;
 };
 
 /**
@@ -119,8 +126,9 @@ struct KalmanFilter
  *  @params[in] n_observables Number of observables
  *  @returns    kalman_filter_status
  */
-uint8_t kalman_filter_init(struct KalmanFilter * kalman_filter, 
-		uint16_t n_states, uint16_t n_input, uint16_t n_output);
+kalman_filter_status kalman_filter_init(struct KalmanFilter * kalman_filter, 
+									    uint16_t n_states, uint16_t n_input, 
+									    uint16_t n_output);
 
 /**
  *  @fn         kalman_filter_step
@@ -130,6 +138,6 @@ uint8_t kalman_filter_init(struct KalmanFilter * kalman_filter,
  *  @returns    kalman_filter_status
  */
 kalman_filter_status kalman_filter_step(struct KalmanFilter *kalman_filter, 
-		const float32_t *u);
+										float32_t *measurement);
 
 #endif /* KALMAN_H */
