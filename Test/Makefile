@@ -18,7 +18,14 @@ CPPUTEST_HOME=cpputest
 
 # project source files path
 SRC_FILES=$(PROJECT_DIR)/Core/Src/find.c \
-		  $(PROJECT_DIR)/Core/Src/kalman.c
+		  $(PROJECT_DIR)/Drivers/CMSIS/DSP/Source/MatrixFunctions/arm_mat_init_f32.c \
+		  $(PROJECT_DIR)/Drivers/CMSIS/DSP/Source/MatrixFunctions/arm_mat_add_f32.c \
+		  $(PROJECT_DIR)/Drivers/CMSIS/DSP/Source/MatrixFunctions/arm_mat_mult_f32.c \
+		  $(PROJECT_DIR)/Drivers/CMSIS/DSP/Source/MatrixFunctions/arm_mat_sub_f32.c \
+		  $(PROJECT_DIR)/Drivers/CMSIS/DSP/Source/MatrixFunctions/arm_mat_trans_f32.c \
+		  $(PROJECT_DIR)/Drivers/CMSIS/DSP/Source/MatrixFunctions/arm_mat_inverse_f32.c \
+		  $(PROJECT_DIR)/Core/Src/kalman.c \
+		  $(PROJECT_DIR)/Core/Src/auxiliary_mat.c
 SRC_DIRS=
 
 # project header files path
