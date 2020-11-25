@@ -9,26 +9,12 @@ TEST_GROUP(kalman_test)
 {
 	struct KalmanFilter soc_kalman_filter;
 	void setup(){
-		// Actually this should be initialized as in /Core/Src/main.c
-		// but cpp-bullshit complains about initialization of structs due to
-		// design constraints
-		memcpy(soc_kalman_filter.x_act_data, &x_act_data_dummy, 
-			   N_STATES*sizeof(float32_t));
-		memcpy(soc_kalman_filter.f_mat_data, &f_mat_data_dummy, 
-			   N_STATES*N_STATES*sizeof(float32_t));
-		memcpy(soc_kalman_filter.g_mat_data, &g_mat_data_dummy, 
-			   N_STATES*N_INPUTS*sizeof(float32_t));
-		memcpy(soc_kalman_filter.h_mat_data, &h_mat_data_dummy,
-			   N_INPUTS*N_STATES*sizeof(float32_t));
-		memcpy(soc_kalman_filter.q_mat_data, &q_mat_data_dummy,
-			   N_STATES*N_STATES*sizeof(float32_t));
-		memcpy(soc_kalman_filter.p_mat_actual_data, &p_mat_actual_data_dummy,
-			   N_STATES*N_STATES*sizeof(float32_t));
-		memcpy(soc_kalman_filter.r_mat_data, &r_mat_data_dummy, 
-			   N_INPUTS*N_INPUTS*sizeof(float32_t));
-		memcpy(soc_kalman_filter.u_data, &u_data_dummy, 
-			   N_INPUTS*sizeof(float32_t));
-		kalman_filter_init(&soc_kalman_filter, 4, 4, 4);
+		kalman_filter_init(&soc_kalman_filter, x_act_data_dummy, 
+						   f_mat_data_dummy, g_mat_data_dummy, 
+						   h_mat_data_dummy, q_mat_data_dummy,
+						   p_mat_actual_data_dummy, r_mat_data_dummy,
+						   u_data_dummy, NULL, N_STATES, N_INPUTS, 
+						   N_OUTPUTS);
 	}
 
 	void teardown(){

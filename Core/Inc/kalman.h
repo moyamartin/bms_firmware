@@ -115,20 +115,55 @@ struct KalmanFilter
 	 */
 	float32_t d_mat_data[MATRIX_MAX_SIZE];
 	arm_matrix_instance_f32 d_mat;
+
+	/**
+	 *	@brief number of states of the system
+	 */
+	uint16_t n_states;
+
+	/**
+	 *	@brief number of inputs of the system
+	 */
+	uint16_t n_inputs;
+
+	/**
+	 *	@brief number of outputs of the system
+	 */
+	uint16_t n_outputs;
 };
 
 /**
  *  @fn         kalman_filter_init
- *  @brief      Initializes a kalman filter struture
+ *  @brief      Initializes a kalman filter struture with the arrays pase
  *
  *  @params[in] kalman_filter Kalman Filter data structure
+ *  @params[in] x_act_data_param
+ *  @params[in] f_mat_data_param
+ *  @params[in] g_mat_data_param
+ *  @params[in] h_mat_data_param
+ *  @params[in] q_mat_data_param
+ *  @params[in] p_mat_data_param
+ *  @params[in] r_mat_data_param
+ *  @params[in] u_mat_data_param
+ *  @params[in] d_mat_data_param
  *  @params[in] n_states Number of states of the system
- *  @params[in] n_observables Number of observables
+ *  @params[in] n_inputs
+ *  @params[in] N_outputs
  *  @returns    kalman_filter_status
  */
-kalman_filter_status kalman_filter_init(struct KalmanFilter * kalman_filter, 
-									    uint16_t n_states, uint16_t n_input, 
-									    uint16_t n_output);
+kalman_filter_status kalman_filter_init(struct KalmanFilter * kalman_filter,
+										const float32_t * x_act_data_param,
+										const float32_t * f_mat_data_param,
+										const float32_t * g_mat_data_param,
+										const float32_t * h_mat_data_param,
+										const float32_t * q_mat_data_param,
+										const float32_t * p_mat_data_param,
+										const float32_t * r_mat_data_param,
+										const float32_t * u_mat_data_param,
+										const float32_t * d_mat_data_param,
+										uint16_t n_states, uint16_t n_input, 
+										uint16_t n_outputs);
+
 
 /**
  *  @fn         kalman_filter_step
