@@ -313,78 +313,130 @@ static arm_status kalman_gain_update(const arm_matrix_instance_f32 *h_mat,
     return arm_mat_mult_f32(p_mat_pred, &h_t_inverse, k_mat);
 }
 
-kalman_filter_status kalman_filter_init(struct KalmanFilter * kalman_filter, 
-									    uint16_t n_states, uint16_t n_input, 
-										uint16_t n_output)
-{   
+kalman_filter_status kalman_filter_init(struct KalmanFilter * kalman_filter,
+										const float32_t * x_act_data_param,
+										const float32_t * f_mat_data_param,
+										const float32_t * g_mat_data_param,
+										const float32_t * h_mat_data_param,
+										const float32_t * q_mat_data_param,
+										const float32_t * p_mat_data_param,
+										const float32_t * r_mat_data_param,
+										const float32_t * u_mat_data_param,
+										const float32_t * d_mat_data_param,
+										uint16_t n_states, uint16_t n_inputs, 
+										uint16_t n_outputs)
+{
+	// set kalman filter matrix dimensions
+	kalman_filter->n_states = n_states;
+	kalman_filter->n_inputs = n_inputs;
+	kalman_filter->n_outputs = n_outputs;
 
-    /* ----- Initialize Vectors ----- */
-
-    // Initialize State vector
+	// Initialize system state
+	if(x_act_data_param != NULL){
+		memcpy(kalman_filter->x_act_data, x_act_data_param, 
+			   n_states*sizeof(float32_t));
+	}
 	arm_mat_init_f32(&kalman_filter->x_act, n_states, 1, 
 					 kalman_filter->x_act_data);
 
-	// Initialize State predicted vector with zeros
+	// Initialize State predicted vector
 	arm_mat_init_f32(&kalman_filter->x_pred, n_states, 1, 
 					 kalman_filter->x_pred_data);
 
-	// Initialize Input Vector
-	arm_mat_init_f32(&kalman_filter->u, n_input, 1, kalman_filter->u_data);
+	// Initialize State Input Vector
+	if(u_mat_data_param != NULL){
+		memcpy(kalman_filter->u_data, u_mat_data_param, 
+			   n_inputs*sizeof(float32_t));
+	}
+	arm_mat_init_f32(&kalman_filter->u, n_inputs, 1, kalman_filter->u_data);
 
-    // Initialize State Transition Matrix
-    arm_mat_init_f32(&kalman_filter->f_mat, n_states, n_states, 
+	// Initialize State Transition Matrix
+	if(f_mat_data_param != NULL){
+		memcpy(kalman_filter->f_mat_data, f_mat_data_param,
+			   n_states*(unsigned long int)n_states*sizeof(float32_t));
+	}
+	arm_mat_init_f32(&kalman_filter->f_mat, n_states, n_states, 
 					 kalman_filter->f_mat_data);
 
 	// Initialize Transposed State Transition Matrix
 	arm_mat_init_f32(&kalman_filter->f_mat_t, n_states, n_states,
 					 kalman_filter->f_mat_t_data);
-	arm_status status = arm_mat_trans_f32(&kalman_filter->f_mat, 
+	arm_status status = arm_mat_trans_f32(&kalman_filter->f_mat,
 										  &kalman_filter->f_mat_t);
-    if(status != ARM_MATH_SUCCESS){
-        return KALMAN_FAILED_INIT;
-    }                                                
+	if(status != ARM_MATH_SUCCESS){
+		return KALMAN_FAILED_INIT;
+	}
 
-    // Initialize Estimate Uncertainty Matrix
-    arm_mat_init_f32(&kalman_filter->p_mat_actual, n_states, n_states, 
+		
+	// Initialize Estimate Uncertainty Matrix
+	if(p_mat_data_param != NULL){
+		memcpy(kalman_filter->p_mat_actual_data, p_mat_data_param, 
+			   n_states*(unsigned long int)n_states*sizeof(float32_t));
+	}
+	arm_mat_init_f32(&kalman_filter->p_mat_actual, n_states, n_states,
 					 kalman_filter->p_mat_actual_data);
 
-	// Initialize Estimate Predicted Uncertainty Matrix
-	arm_mat_init_f32(&kalman_filter->p_mat_pred, n_states, n_states, 
+	// Initialize Estimated Predicted Uncertainty Matrix to zero
+	arm_mat_init_f32(&kalman_filter->p_mat_pred, n_states, n_states,
 					 kalman_filter->p_mat_pred_data);
 
-    // Initialize Process Noise Uncertainty Matrix
-    arm_mat_init_f32(&kalman_filter->q_mat, n_states, n_states, 
-					 kalman_filter->q_mat_data);
-
-    // Initialize Control Matrix
-    arm_mat_init_f32(&kalman_filter->g_mat, n_states, n_input, 
+	// Initialize Control Matrix
+	if(p_mat_data_param != NULL){
+		memcpy(kalman_filter->g_mat_data, g_mat_data_param, 
+			   n_states*(unsigned long int)n_inputs*sizeof(float32_t));
+	}
+	arm_mat_init_f32(&kalman_filter->g_mat, n_states, n_inputs,
 					 kalman_filter->g_mat_data);
 
-    // Initialize Measurement Uncertainty
-    arm_mat_init_f32(&kalman_filter->r_mat, n_output, n_output, 
+	// Initialize Measurement Uncertainty
+	if(r_mat_data_param != NULL){
+		memcpy(kalman_filter->r_mat_data, r_mat_data_param,
+			  n_outputs*(unsigned long int)n_outputs*sizeof(float32_t));
+	}
+	arm_mat_init_f32(&kalman_filter->r_mat, n_outputs, n_outputs, 
 					 kalman_filter->r_mat_data);
 
-	// Initialize Kalman Gain
-	arm_mat_init_f32(&kalman_filter->k_mat, n_states, n_input, 
-					 kalman_filter->k_mat_data);
+	// Initialize Kalman Gain Matrix
+	arm_mat_init_f32(&kalman_filter->k_mat, n_states, n_inputs, 
+				     kalman_filter->k_mat_data);
 
-    // Initialize Observation Matrix 
-    arm_mat_init_f32(&kalman_filter->h_mat, n_output, n_states, 
+	// Initialize Observation matrix
+	if(h_mat_data_param != NULL){
+		memcpy(kalman_filter->h_mat_data, h_mat_data_param, 
+			   n_outputs*(unsigned long int)n_states*sizeof(float32_t));
+	}
+	arm_mat_init_f32(&kalman_filter->h_mat, n_outputs, n_states, 
 					 kalman_filter->h_mat_data);
 
-    // Initialize Observation transposed matrix
-	arm_mat_init_f32(&kalman_filter->h_mat_t, n_states, n_output,
+	// Initialize Observation transposed matrix
+	arm_mat_init_f32(&kalman_filter->h_mat_t, n_states, n_outputs,
 					 kalman_filter->h_mat_t_data);
 	status = arm_mat_trans_f32(&kalman_filter->h_mat, &kalman_filter->h_mat_t);
-    if(status != ARM_MATH_SUCCESS){
-        return KALMAN_FAILED_INIT;
-    }                                                
+	if(status != ARM_MATH_SUCCESS){
+		return KALMAN_FAILED_INIT;
+	}
 
+	// initialize D matrix
+	if(d_mat_data_param != NULL){
+		memcpy(kalman_filter->d_mat_data, d_mat_data_param, 
+			   n_inputs*(unsigned long int)n_inputs*sizeof(float32_t));
+
+	}
+	arm_mat_init_f32(&kalman_filter->d_mat, n_inputs, n_inputs, 
+					 kalman_filter->d_mat_data);
+
+	// Initialize Process Noise Uncertainty Matrix
+	if(q_mat_data_param != NULL){
+		memcpy(kalman_filter->q_mat_data, q_mat_data_param,
+			   n_states*(unsigned long int)n_states*sizeof(float32_t));
+	}
+	arm_mat_init_f32(&kalman_filter->q_mat, n_states, n_states, 
+				     kalman_filter->q_mat_data);
+	
 	// Initialize Identity matrix
 	arm_mat_eye_f32(&kalman_filter->id_mat, n_states, 
 					kalman_filter->id_mat_data);
-    
-    return KALMAN_SUCCESS;
+	return KALMAN_SUCCESS;
 }
 
 kalman_filter_status kalman_filter_step(struct KalmanFilter *kalman_filter, 
