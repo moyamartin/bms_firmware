@@ -3,12 +3,10 @@
 
 #include <stdint.h>
 #include "kalman.h"
-#include "battery_luts.h"
 
 struct Cell {
 	struct KalmanFilter filter;
 	uint32_t current_soc_index;
-	float32_t current_state[N_STATES];
 };
 
 /**

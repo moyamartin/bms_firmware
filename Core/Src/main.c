@@ -42,10 +42,8 @@ int main(void)
     /* Initialize all configured peripherals */
 
     MX_GPIO_Init();
-	/*
     ina226_I2C1_Init();
     ina226_init();
-	*/
 
     //ina226_get_current_polling();
 }
