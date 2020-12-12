@@ -113,8 +113,8 @@ struct KalmanFilter
 	/**
 	 *	@brief d_mat relates the input in the innovation part of the algorithm
 	 */
-	float32_t d_mat_data[MATRIX_MAX_SIZE];
-	arm_matrix_instance_f32 d_mat;
+	float32_t j_mat_data[MATRIX_MAX_SIZE];
+	arm_matrix_instance_f32 j_mat;
 
 	/**
 	 *	@brief number of states of the system
@@ -134,7 +134,10 @@ struct KalmanFilter
 
 /**
  *  @fn         kalman_filter_init
- *  @brief      Initializes a kalman filter struture with the arrays pase
+ *  @brief      Initializes a kalman filter struture, it takes as an input a
+ *  pointer to a KalmanFilter structure and the necessary arrays. If an array
+ *  needs to be initialized to all zeros, please pass a NULL pointer to that
+ *  *_mat_data_param argument
  *
  *  @params[in] kalman_filter Kalman Filter data structure
  *  @params[in] x_act_data_param
@@ -145,7 +148,7 @@ struct KalmanFilter
  *  @params[in] p_mat_data_param
  *  @params[in] r_mat_data_param
  *  @params[in] u_mat_data_param
- *  @params[in] d_mat_data_param
+ *  @params[in] j_mat_data_param
  *  @params[in] n_states Number of states of the system
  *  @params[in] n_inputs
  *  @params[in] N_outputs
@@ -160,11 +163,115 @@ kalman_filter_status kalman_filter_init(struct KalmanFilter * kalman_filter,
 										const float32_t * p_mat_data_param,
 										const float32_t * r_mat_data_param,
 										const float32_t * u_mat_data_param,
-										const float32_t * d_mat_data_param,
+										const float32_t * j_mat_data_param,
 										uint16_t n_states, uint16_t n_input, 
 										uint16_t n_outputs);
 
+/**
+ *  @fn         kalman_filter_update_f_data 
+ *  @brief      Updates F matrix with new data.
+ *
+ *  @params[in] kalman_filter Kalman Filter data structure
+ *  @params[in] data pointer to float32_t array containing the new data
+ *  @returns new pointer to destination
+ *  @note this function asumes that the kalman_filter size (nr of inputs,
+ *  outputs and states) has been already
+ *  initialized otherwise vector u is of size 0*0. This function is used in
+ *  case a Extended Kalman Filter wants to be implemented.
+ */
+arm_status kalman_filter_modify_f_data(struct KalmanFilter * kalman_filter, 
+									   const float32_t * f_mat_data);
 
+/**
+ *  @fn         kalman_filter_modify_q_data 
+ *  @brief      Updates g matrix with new data.
+ *
+ *  @params[in] kalman_filter Kalman Filter data structure
+ *  @params[in] data pointer to float32_t array containing the new data
+ *  @returns new pointer to destination
+ *  @note this function asumes that the kalman_filter size (nr of inputs,
+ *  outputs and states) has been already
+ *  initialized otherwise vector u is of size 0*0. This function is used in
+ *  case a Extended Kalman Filter wants to be implemented.
+ */
+void * kalman_filter_modify_g_data(struct KalmanFilter * kalman_filter, 
+								   const float32_t * f_mat_data);
+
+/**
+ *  @fn         kalman_filter_modify_q_data 
+ *  @brief      Updates h matrix with new data.
+ *
+ *  @params[in] kalman_filter Kalman Filter data structure
+ *  @params[in] data pointer to float32_t array containing the new data
+ *  @returns new pointer to destination
+ *  @note this function asumes that the kalman_filter size (nr of inputs,
+ *  outputs and states) has been already
+ *  initialized otherwise vector u is of size 0*0. This function is used in
+ *  case a Extended Kalman Filter wants to be implemented.
+ */
+arm_status kalman_filter_modify_h_data(struct KalmanFilter * kalman_filter, 
+								   const float32_t * f_mat_data);
+
+/**
+ *  @fn         kalman_filter_modify_q_data 
+ *  @brief      Updates q matrix with new data.
+ *
+ *  @params[in] kalman_filter Kalman Filter data structure
+ *  @params[in] data pointer to float32_t array containing the new data
+ *  @returns new pointer to destination
+ *  @note this function asumes that the kalman_filter size (nr of inputs,
+ *  outputs and states) has been already
+ *  initialized otherwise vector u is of size 0*0. This function is used in
+ *  case a Extended Kalman Filter wants to be implemented.
+ */
+void * kalman_filter_modify_q_data(struct KalmanFilter * kalman_filter, 
+				    		       const float32_t * f_mat_data);
+
+
+/**
+ *  @fn         kalman_filter_modify_r_data 
+ *  @brief      Updates r matrix with new data.
+ *
+ *  @params[in] kalman_filter Kalman Filter data structure
+ *  @params[in] data pointer to float32_t array containing the new data
+ *  @returns new pointer to destination
+ *  @note this function asumes that the kalman_filter size (nr of inputs,
+ *  outputs and states) has been already
+ *  initialized otherwise vector u is of size 0*0. This function is used in
+ *  case a Extended Kalman Filter wants to be implemented.
+ */
+void * kalman_filter_modify_r_data(struct KalmanFilter * kalman_filter, 
+								   const float32_t * f_mat_data);
+
+/**
+ *  @fn         kalman_filter_modify_u_data 
+ *  @brief      Updates u vector with new data.
+ *
+ *  @params[in] kalman_filter Kalman Filter data structure
+ *  @params[in] data pointer to float32_t array containing the new data
+ *  @returns new pointer to destination
+ *  @note this function asumes that the kalman_filter size (nr of inputs,
+ *  outputs and states) has been already
+ *  initialized otherwise vector u is of size 0*0. This function is used in
+ *  case a Extended Kalman Filter wants to be implemented.
+ */
+void * kalman_filter_modify_u_data(struct KalmanFilter * kalman_filter, 
+								   const float32_t * data);
+
+/**
+ *  @fn         kalman_filter_update_j_data 
+ *  @brief      Updates J matrix with new data.
+ *
+ *  @params[in] kalman_filter Kalman Filter data structure
+ *  @params[in] d_mat_data pointer to float32_t array containing the new data
+ *  @returns    
+ *  @note this function asumes that the kalman_filter size (nr of inputs,
+ *  outputs and states) has been already
+ *  initialized otherwise vector j is of size 0*0. This function is used in
+ *  case a Extended Kalman Filter wants to be implemented.
+ */
+void * kalman_filter_modify_j_data(struct KalmanFilter * kalman_filter,
+								   const float32_t * data);
 /**
  *  @fn         kalman_filter_step
  *  @brief      Performs a step of the Kalman filter

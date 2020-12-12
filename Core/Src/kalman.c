@@ -103,7 +103,7 @@ static arm_status covariance_extrapolation_uncertainty(
  *  @brief	Updates the current state of the system taking into account the
  * 			measurement and the previous prediction following the next equation
  *
- * 			x_{n,n} = x_{n,n-1} + K_n*(z_n - H*x_{n,n-1})
+ * 			x_{n,n} = x_{n,n-1} + K_n*(z_n - (H*x_{n,n-1} + D*u))
  *
  *  @param[in]  h_mat           Observation matrix
  *  @param[in]  x_mat_pred      Predicted state matrix
@@ -116,6 +116,8 @@ static arm_status state_update(const arm_matrix_instance_f32 *h_mat,
 							   const arm_matrix_instance_f32 *x_mat_pred,
 							   const arm_matrix_instance_f32 *observation,
 							   const arm_matrix_instance_f32 *k_mat,
+							   const arm_matrix_instance_f32 *j_mat,
+							   const arm_matrix_instance_f32 *u_mat,
 							   arm_matrix_instance_f32 *x_mat_actual)
 {
 
@@ -129,13 +131,34 @@ static arm_status state_update(const arm_matrix_instance_f32 *h_mat,
     if(current_state != ARM_MATH_SUCCESS){
         return current_state;
     }
+
+	/* Calculates J*u */
+	arm_matrix_instance_f32 j_times_u;
+	float32_t j_times_u_data[MATRIX_MAX_SIZE];
+	arm_mat_init_f32(&j_times_u, j_mat->numRows, u_mat->numCols, 
+					 j_times_u_data);
+	current_state = arm_mat_mult_f32(j_mat, u_mat, &j_times_u);
+	if(current_state != ARM_MATH_SUCCESS){
+		return current_state;
+	}
+
+	/* Calculates H*x_{n,n-1} + D*u */
+	arm_matrix_instance_f32 model;
+	float32_t model_data[MATRIX_MAX_SIZE];
+	arm_mat_init_f32(&model, h_times_x_prev.numRows, h_times_x_prev.numCols,
+					 model_data);
+	current_state = arm_mat_add_f32(&h_times_x_prev, &j_times_u, &model);
+	if(current_state != ARM_MATH_SUCCESS){
+		return current_state;
+	}
+
 	
-	/* Calculates z_n - H*x_{n,n-1} */
+	/* Calculates z_n - (H*x_{n,n-1} + D*u) */
     arm_matrix_instance_f32 innovation;
 	float32_t innovation_data[MATRIX_MAX_SIZE];
-    arm_mat_init_f32(&innovation, observation->numRows, observation->numCols, 
+    arm_mat_init_f32(&innovation, model.numRows, model.numCols, 
 					 innovation_data);
-    current_state = arm_mat_sub_f32(observation, &h_times_x_prev, &innovation);
+    current_state = arm_mat_sub_f32(observation, &model, &innovation);
     if(current_state != ARM_MATH_SUCCESS){
         return current_state;
     }
@@ -172,6 +195,7 @@ static arm_status covariance_update(const arm_matrix_instance_f32 *k_mat,
 		const arm_matrix_instance_f32 *r_mat, 
 		arm_matrix_instance_f32 *p_mat_actual)
 {
+	/* Calculte K*H */
     arm_matrix_instance_f32 k_times_h;
 	float32_t k_times_h_data[MATRIX_MAX_SIZE];
     arm_mat_init_f32(&k_times_h, k_mat->numRows, h_mat->numCols, 
@@ -180,39 +204,45 @@ static arm_status covariance_update(const arm_matrix_instance_f32 *k_mat,
     if(current_state!= ARM_MATH_SUCCESS){
         return current_state;
     }
-
+	
+	/* Calculate I - K*H */
     arm_matrix_instance_f32 id_minus_kh;
 	float32_t id_minus_kh_data[MATRIX_MAX_SIZE];
     arm_mat_init_f32(&id_minus_kh, id_mat->numRows, id_mat->numCols,
-			id_minus_kh_data);
+					 id_minus_kh_data);
     current_state = arm_mat_sub_f32(id_mat, &k_times_h, &id_minus_kh);
     if(current_state != ARM_MATH_SUCCESS){
         return current_state;
     }
-
+	
+	/* Calculate (I - K*H)' */
     arm_matrix_instance_f32 id_minus_kh_t;
 	float32_t id_minus_kh_t_data[MATRIX_MAX_SIZE];
     arm_mat_init_f32(&id_minus_kh_t, id_mat->numRows, id_mat->numCols, 
-			id_minus_kh_t_data);
+					 id_minus_kh_t_data);
     current_state = arm_mat_trans_f32(&id_minus_kh, &id_minus_kh_t);
     if(current_state != ARM_MATH_SUCCESS){
         return current_state;
     }
 
+	/* Calculate (I - K*H)*P */
     arm_matrix_instance_f32 knh_times_p;
 	float32_t knh_times_p_data[MATRIX_MAX_SIZE];
     arm_mat_init_f32(&knh_times_p, id_mat->numRows, id_mat->numCols, 
-			knh_times_p_data);
+					 knh_times_p_data);
     current_state = arm_mat_mult_f32(&id_minus_kh, p_mat_pred, &knh_times_p);
     if(current_state != ARM_MATH_SUCCESS){
         return current_state;
     }
 
+	
+	/* Calculate (I - K*H)*P*(I - K*H)' */
     arm_matrix_instance_f32 first_term;
 	float32_t first_term_data[MATRIX_MAX_SIZE];
     arm_mat_init_f32(&first_term, knh_times_p.numRows, id_minus_kh_t.numCols, 
-            first_term_data);
-    current_state = arm_mat_mult_f32(&knh_times_p, &id_minus_kh_t, &first_term);
+					 first_term_data);
+    current_state = arm_mat_mult_f32(&knh_times_p, &id_minus_kh_t, 
+									 &first_term);
     if(current_state != ARM_MATH_SUCCESS){
         return current_state;
     }
@@ -220,7 +250,7 @@ static arm_status covariance_update(const arm_matrix_instance_f32 *k_mat,
     arm_matrix_instance_f32 k_times_r;
 	float32_t k_times_r_data[MATRIX_MAX_SIZE];
     arm_mat_init_f32(&k_times_r, k_mat->numRows, r_mat->numCols, 
-			k_times_r_data);
+					 k_times_r_data);
     current_state = arm_mat_mult_f32(k_mat, r_mat, &k_times_r);
     if(current_state != ARM_MATH_SUCCESS){
         return current_state;
@@ -228,13 +258,13 @@ static arm_status covariance_update(const arm_matrix_instance_f32 *k_mat,
 
     arm_matrix_instance_f32 k_mat_t;
 	float32_t k_mat_t_data[MATRIX_MAX_SIZE];
-    arm_mat_init_f32(&k_mat_t, k_mat->numRows, k_mat->numCols, k_mat_t_data);
+    arm_mat_init_f32(&k_mat_t, k_mat->numCols, k_mat->numRows, k_mat_t_data);
     current_state = arm_mat_trans_f32(k_mat, &k_mat_t);
 
     arm_matrix_instance_f32 second_term;
 	float32_t second_term_data[MATRIX_MAX_SIZE];
     arm_mat_init_f32(&second_term, k_times_r.numRows, k_mat_t.numCols, 
-			second_term_data);
+					 second_term_data);
     current_state = arm_mat_mult_f32(&k_times_r, &k_mat_t, &second_term);
     if(current_state != ARM_MATH_SUCCESS){
         return current_state;
@@ -277,7 +307,8 @@ static arm_status kalman_gain_update(const arm_matrix_instance_f32 *h_mat,
 	float32_t h_times_p_times_h_t_data[MATRIX_MAX_SIZE];
     arm_mat_init_f32(&h_times_p_times_h_t, h_times_p.numRows, h_mat_t->numCols, 
 					 h_times_p_times_h_t_data);
-    current_state = arm_mat_mult_f32(&h_times_p, h_mat_t, &h_times_p_times_h_t);
+    current_state = arm_mat_mult_f32(&h_times_p, h_mat_t, 
+									 &h_times_p_times_h_t);
     if(current_state != ARM_MATH_SUCCESS){
         return current_state;
     }
@@ -322,7 +353,7 @@ kalman_filter_status kalman_filter_init(struct KalmanFilter * kalman_filter,
 										const float32_t * p_mat_data_param,
 										const float32_t * r_mat_data_param,
 										const float32_t * u_mat_data_param,
-										const float32_t * d_mat_data_param,
+										const float32_t * j_mat_data_param,
 										uint16_t n_states, uint16_t n_inputs, 
 										uint16_t n_outputs)
 {
@@ -345,8 +376,7 @@ kalman_filter_status kalman_filter_init(struct KalmanFilter * kalman_filter,
 
 	// Initialize State Input Vector
 	if(u_mat_data_param != NULL){
-		memcpy(kalman_filter->u_data, u_mat_data_param, 
-			   n_inputs*sizeof(float32_t));
+		kalman_filter_modify_u_data(kalman_filter, u_mat_data_param);
 	}
 	arm_mat_init_f32(&kalman_filter->u, n_inputs, 1, kalman_filter->u_data);
 
@@ -381,29 +411,28 @@ kalman_filter_status kalman_filter_init(struct KalmanFilter * kalman_filter,
 					 kalman_filter->p_mat_pred_data);
 
 	// Initialize Control Matrix
-	if(p_mat_data_param != NULL){
-		memcpy(kalman_filter->g_mat_data, g_mat_data_param, 
-			   n_states*(unsigned long int)n_inputs*sizeof(float32_t));
+	if(g_mat_data_param != NULL){
+		kalman_filter_modify_g_data(kalman_filter, g_mat_data_param);
 	}
 	arm_mat_init_f32(&kalman_filter->g_mat, n_states, n_inputs,
 					 kalman_filter->g_mat_data);
 
 	// Initialize Measurement Uncertainty
 	if(r_mat_data_param != NULL){
-		memcpy(kalman_filter->r_mat_data, r_mat_data_param,
-			  n_outputs*(unsigned long int)n_outputs*sizeof(float32_t));
+		kalman_filter_modify_r_data(kalman_filter, r_mat_data_param);
 	}
 	arm_mat_init_f32(&kalman_filter->r_mat, n_outputs, n_outputs, 
 					 kalman_filter->r_mat_data);
 
 	// Initialize Kalman Gain Matrix
-	arm_mat_init_f32(&kalman_filter->k_mat, n_states, n_inputs, 
+	arm_mat_init_f32(&kalman_filter->k_mat, n_states, n_outputs, 
 				     kalman_filter->k_mat_data);
 
 	// Initialize Observation matrix
 	if(h_mat_data_param != NULL){
 		memcpy(kalman_filter->h_mat_data, h_mat_data_param, 
-			   n_outputs*(unsigned long int)n_states*sizeof(float32_t));
+			   kalman_filter->n_outputs*
+			   (unsigned long int)kalman_filter->n_states*sizeof(float32_t));
 	}
 	arm_mat_init_f32(&kalman_filter->h_mat, n_outputs, n_states, 
 					 kalman_filter->h_mat_data);
@@ -417,13 +446,11 @@ kalman_filter_status kalman_filter_init(struct KalmanFilter * kalman_filter,
 	}
 
 	// initialize D matrix
-	if(d_mat_data_param != NULL){
-		memcpy(kalman_filter->d_mat_data, d_mat_data_param, 
-			   n_inputs*(unsigned long int)n_inputs*sizeof(float32_t));
-
+	if(j_mat_data_param != NULL){
+		kalman_filter_modify_j_data(kalman_filter, j_mat_data_param);
 	}
-	arm_mat_init_f32(&kalman_filter->d_mat, n_inputs, n_inputs, 
-					 kalman_filter->d_mat_data);
+	arm_mat_init_f32(&kalman_filter->j_mat, n_inputs, n_inputs, 
+					 kalman_filter->j_mat_data);
 
 	// Initialize Process Noise Uncertainty Matrix
 	if(q_mat_data_param != NULL){
@@ -445,8 +472,9 @@ kalman_filter_status kalman_filter_step(struct KalmanFilter *kalman_filter,
     /* Time Update */
     // Extrapolate the state of the system based on the current state and 
     if(state_extrapolation_predict(&kalman_filter->f_mat, &kalman_filter->x_act, 
-				&kalman_filter->g_mat, &kalman_filter->u, 
-				&kalman_filter->x_pred) != ARM_MATH_SUCCESS){
+								   &kalman_filter->g_mat, &kalman_filter->u, 
+								   &kalman_filter->x_pred) 
+			!= ARM_MATH_SUCCESS){
         return KALMAN_FAILED_EXTRAPOLATE_STATE;
     }
 
@@ -470,11 +498,12 @@ kalman_filter_status kalman_filter_step(struct KalmanFilter *kalman_filter,
 
 	/* calculate observation if necessary */
 	arm_matrix_instance_f32 measurement_mat;
-	arm_mat_init_f32(&measurement_mat, kalman_filter->h_mat.numCols, 1, 
+	arm_mat_init_f32(&measurement_mat, kalman_filter->n_outputs, 1, 
 					 measurement);
     // Update estimate with measurement
     if(state_update(&kalman_filter->h_mat, &kalman_filter->x_pred,
 					&measurement_mat, &kalman_filter->k_mat, 
+					&kalman_filter->j_mat, &kalman_filter->u,
 					&kalman_filter->x_act) != ARM_MATH_SUCCESS){
         return KALMAN_FAILED_GAIN_CALCULATION;
     }
@@ -489,4 +518,64 @@ kalman_filter_status kalman_filter_step(struct KalmanFilter *kalman_filter,
 
     // Lastly return success
     return KALMAN_SUCCESS;
+}
+
+arm_status kalman_filter_modify_f_data(struct KalmanFilter * kalman_filter,
+									   const float32_t * data)
+{
+	// Updates matrix f
+	memcpy(kalman_filter->f_mat_data, data, kalman_filter->n_states*
+		   (unsigned long int)kalman_filter->n_states*sizeof(float32_t));
+	// Updates matrix f_transposed
+	return arm_mat_trans_f32(&kalman_filter->f_mat, &kalman_filter->f_mat_t);
+}
+
+void * kalman_filter_modify_g_data(struct KalmanFilter * kalman_filter,
+								   const float32_t * data)
+{
+	return memcpy(kalman_filter->g_mat_data, data, kalman_filter->n_states*
+				  (unsigned long int)kalman_filter->n_inputs*
+				  sizeof(float32_t));
+}
+
+arm_status kalman_filter_modify_h_data(struct KalmanFilter * kalman_filter,
+									   const float32_t * data)
+{
+	memcpy(kalman_filter->h_mat_data, data, kalman_filter->n_outputs*
+				  (unsigned long int)kalman_filter->n_states*
+				  sizeof(float32_t));
+	return arm_mat_trans_f32(&kalman_filter->h_mat, &kalman_filter->h_mat_t);
+}
+
+void * kalman_filter_modify_q_data(struct KalmanFilter * kalman_filter,
+								   const float32_t * data)
+{	
+	return memcpy(kalman_filter->q_mat_data, data, kalman_filter->n_states*
+				  (unsigned long int)kalman_filter->n_states*
+				  sizeof(float32_t));
+}
+
+void * kalman_filter_modify_r_data(struct KalmanFilter * kalman_filter,
+								   const float32_t * data)
+{
+	return memcpy(kalman_filter->r_mat_data, data,
+				  kalman_filter->n_inputs*
+				  (unsigned long int)kalman_filter->n_inputs*
+				  sizeof(float32_t));
+}
+
+void * kalman_filter_modify_u_data(struct KalmanFilter * kalman_filter,
+								   const float32_t * data)
+{
+	return memcpy(kalman_filter->u_data, data, 
+				  kalman_filter->n_inputs*sizeof(float32_t));
+}
+
+void * kalman_filter_modify_j_data(struct KalmanFilter * kalman_filter,
+								   const float32_t * data)
+{
+	return memcpy(kalman_filter->j_mat_data, data, 
+				  kalman_filter->n_inputs*
+				  (unsigned long int)kalman_filter->n_inputs*
+				  sizeof(float32_t));
 }

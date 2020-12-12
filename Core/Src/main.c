@@ -22,8 +22,7 @@
 #include "main.h"
 #include "definitions.h"
 #include "stm32f4xx_lib_ina226.h"
-#include "kalman.h"
-#include "find.h"
+#include "battery_model.h"
 
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
@@ -47,40 +46,6 @@ int main(void)
     ina226_I2C1_Init();
     ina226_init();
 	*/
-	struct KalmanFilter soc_kalman_filter = {
-		.x_act_data = 			{0.0, 70.71067812, 500.0, 70.71067812},
-		.f_mat_data = 			{1.0, 0.1, 0.0, 0.0,
-	                  			  0.0, 1.0, 0.0, 0.0,
-	                  			  0.0, 0.0, 1.0, 0.1,
-                      			  0.0, 0.0, 0.0, 1.0},
-		.g_mat_data = 			{0.0, 0.0, 0.0, 0.0,
-                      		 	 0.0, 0.0, 0.0, 0.0,
-                      			 0.0, 0.0, 1.0, 0.0,
-                      			 0.0, 0.0, 0.0, 1.0},
-		.p_mat_actual_data = 	{1.0, 0.0, 0.0, 0.0,
-                               	 0.0, 1.0, 0.0, 0.0,
-                                 0.0, 0.0, 1.0, 0.0,
-                                 0.0, 0.0, 0.0, 1.0},
-		.q_mat_data =			{0.0, 0.0, 0.0, 0.0,		
-                          		 0.0, 0.0, 0.0, 0.0,
-                          		 0.0, 0.0, 0.0, 0.0,
-                          		 0.0, 0.0, 0.0, 0.0},
-		.r_mat_data =			{0.2, 0.0, 0.0, 0.0,
-                                 0.0, 0.2, 0.0, 0.0,
-                                 0.0, 0.0, 0.2, 0.0,
-						         0.0, 0.0, 0.0, 0.2},
-		.h_mat_data =			{1.0, 0.0, 0.0, 0.0,
-                                  0.0, 1.0, 0.0, 0.0,
-                                  0.0, 0.0, 1.0, 0.0,
-                                  0.0, 0.0, 0.0, 1.0},
-		.u_data =				{0.0, 0.0, -.0495, -.981}
-	};
-
-	uint8_t kalman_filter_is_init = kalman_filter_init(&soc_kalman_filter, 4, 
-			4, 4);
-	if(!kalman_filter_is_init) {
-		return 0;
-	}
 
     //ina226_get_current_polling();
 }
