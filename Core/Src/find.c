@@ -20,7 +20,7 @@ uint32_t find_closest_value_f32(float32_t needle, const float32_t * haysack,
 	}
 
 	while(start < end){
-		mid = (end - start)/2 + start;
+		mid = (end + start)/2;
 		if(needle == haysack[mid]){
 			return mid;
 		}
