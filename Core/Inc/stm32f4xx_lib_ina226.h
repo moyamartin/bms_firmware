@@ -1,16 +1,15 @@
-/*
- * TI-INA226 Bi-Directional Current and Power Monitor library
- *
- * This is a library for the TI-INA226 Bi-Directional Current and Power
- * Monitor with I2C Compatible Interface.
- *
- * Written by Federico David Ceccarelli, 
- + Feel free to submite any comment to fededc88@gmail.com
- *
- * GPL license, all text here must be included in any redistribution.
- *
- */
- 
+/**********************************************************************
+*
+* @file		stm32f4xx_lib_ina226.h
+* @brief	TI-INA226 Bi-Directional Current and Power Monitor driver.	
+* @version	v1.00f00
+* @date		12. Dec. 2020
+* @author	CECARELLI, Federico (fededc88@gmail.com)
+*			MOYA, Martin		(moyamartin1@gmail.com)
+*			SANTOS, Lucio		(lusho2206@gmail.com)
+* @copyright GPL license, all text here must be included in any redistribution.
+**********************************************************************/
+
  #ifndef __LIB_INA226_H__
  #define __LIB_INA226_H__
  
