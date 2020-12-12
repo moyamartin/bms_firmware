@@ -1,3 +1,14 @@
+/**********************************************************************
+*
+* @file		battery_model.cpp
+* @brief	Contains the definitions of the battery model
+* @version	v1.00f00
+* @date		12. Dec. 2020
+* @author	CECARELLI, Federico (fededc88@gmail.com)
+*			MOYA, Martin		(moyamartin1@gmail.com)
+*			SANTOS, Lucio		(lusho2206@gmail.com)
+* @copyright GPL license, all text here must be included in any redistribution.
+**********************************************************************/
 #include "battery_model.h"
 #include "battery_luts.h"
 #include "find.h"
