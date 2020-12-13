@@ -16,10 +16,4 @@
 #define FALSE 0
 #endif /* FALSE */
 
-#ifdef DEBUG
-#define DEBUG(x) printf
-#else
-#define DEBUG(x)
-#endif /* DEBUG */
-
 #endif /* INC_DEFINITIONS_H_ */
