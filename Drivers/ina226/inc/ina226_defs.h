@@ -13,9 +13,7 @@
 #ifndef __INA226_DEFS_H_
 #define __INA226_DEFS_H_
 
-
-
-/** 
+/**
  * Enum class that represent the available I2C addresses for the ina226, these
  * addresses depend on how pins A1 and A2 are connected. The user has to take
  * care when connecting multiple current sensor to not overlap i2c addresses as
@@ -169,5 +167,27 @@ typedef enum {
 	SHUNT_AND_BUS_CONT 	= 0b111,		 /**< Shunt and bus continuous (def) */
 
 } INA226_MODE_settings;
+
+/**
+ * Structure to represent the Mask/Enable register bits (R/W). This register
+ * selects the function that is enabled to control the Alert pin as well as how
+ * that pin works. If multiple functions are enabled, the highest significant
+ * bit position Alert Function takes priority and responds to the Alert Limit
+ * Trigger
+ */
+typedef enum {
+	uint16_t SOL:1;			/**< Shunt Voltage over-voltage */
+	uint16_t SUL:1; 		/**< Shunt Voltage under-voltage */
+	uint16_t BOL:1;		 	/**< Bus voltage over-voltage */
+	uint16_t BUL:1;	 		/**< Bus voltage under-voltage */
+	uint16_t POL:1;			/**< Power over-limit */
+	uint16_t CNVR:1;		/**< Conversion Ready */
+	uint16_t RESERVED:5;	
+	uint16_t AFF:1;			/**< Alert function flag */
+	uint16_t CVRF:1;		/**< Conversion ready flag */
+	uint16_t OVF:1;			/**< Math Overflow flag */
+	uint16_t APOL:1;		/**< Alert Polarity bit */
+	uint16_t LEN:1;			/**< Alert Latch enable */
+} INA226_MASK_ENABLE_bits;
 
 #endif /* ina226_defs.h */
