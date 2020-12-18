@@ -55,6 +55,7 @@ Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c 
 C_SOURCES += $(wildcard Core/Src/*.c)
+C_SOURCES += $(wildcard Drivers/ina226/src/*.c)
 
 
 # ASM sources
@@ -115,7 +116,8 @@ C_INCLUDES =  \
 -IDrivers/STM32F4xx_HAL_Driver/Inc/Legacy \
 -IDrivers/CMSIS/Device/ST/STM32F4xx/Include \
 -IDrivers/CMSIS/Include \
--IDrivers/CMSIS/DSP/Include
+-IDrivers/CMSIS/DSP/Include \
+-IDrivers/ina226/inc
 
 
 # compile gcc flags
