@@ -17,6 +17,21 @@
 #include "ina226_defs.h"
 
 /**
+ * @enum 
+ */
+typedef enum {
+	OK = 0,
+	FAIL = -1,
+	ID_MISMATCH = -2,
+	DIE_ID_MISMATCH = -3,
+	CONFIG_ERROR = -4,
+	I2C_TRANSMISSION_ERROR = -5,
+	BAD_PARAMETER = -6,
+	NOT_INITIALIZED = -7,
+	INVALIDA_I2C_ADDRESS
+}
+
+/**
  * @struct INA226
  * @brief This structure defines a HAL layer for the device data structure
  */
