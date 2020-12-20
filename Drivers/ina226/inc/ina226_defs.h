@@ -13,72 +13,94 @@
 #ifndef __INA226_DEFS_H_
 #define __INA226_DEFS_H_
 
+#include "definitions.h"
 
 /** 
  * INA226 Configuration Register address 
  *	Default value: 0b01000001 00100111 0x4127
  *	Type: R/W
  */
-#define INA226_CONFIG_REG		0x00	
+#define INA226_CONFIG_REG		(0x00)
+
+/** 
+ * INA226 Configuration Register default value
+ */
+#define INA226_CONFIG_DEFAULT	(0x4127)
 
 /** 
  * INA226 Shunt Voltage Register address 
  *	Default value: 0b00000000 00000000 0x0000
  *	Type: R
  */
-#define INA226_SHUNT_V_REG		0x01
+#define INA226_SHUNT_V_REG		(0x01)
 
 /** 
  * INA226 Bus Voltage Register address 
  * 	Default value: 0b00000000 00000000 0x0000
  *	Type: R
  */
-#define INA226_BUS_V_REG		0x02
+#define INA226_BUS_V_REG		(0x02)
 /** 
  * INA226 Power Register address 
  * 	Default value: 0b00000000 00000000 0x0000
  *	Type: R
  */
-#define INA226_POWER_REG		0x03
+#define INA226_PWR_REG		(0x03)
 /** 
  * INA226 Current Register address 
  * 	Default value: 0b00000000 00000000 0x0000
  *	Type: R
  */
-#define INA226_SHUNT_I_REG		0x04
+#define INA226_CURRENT_REG		(0x04)
 /** 
  * INA226 Calibration Register address 
  * 	Default value: 0b00000000 00000000 0x0000
  *	Type: R
  */
-#define INA226_CAL_REG			0x05
+#define INA226_CAL_REG			(0x05)
 /** 
  * INA226 Mask/Enable Register address 
  * 	Default value: 0b00000000 00000000 0x0000
  *	Type: R
  */
-#define INA226_MASK_EN_REG		0x06
+#define INA226_MASK_EN_REG		(0x06)
 /** 
  * INA226 Alert Limit Register address 
  * 	Default value: 0b00000000 00000000 0x0000
  *	Type: R
  */
-#define INA226_ALERT_LIM_REG	0x07
+#define INA226_ALERT_LIM_REG	(0x07)
 /** 
  * INA226 Manufacturer ID Register address 
  * 	Default value: 0b0101010001001001 0x5449
  *	Type: R
  */
-#define INA226_MAN_ID_REG		0xFE
+#define INA226_MAN_ID_REG		(0xFE)
+/** 
+ * INA226 Manufacturer ID Register Value
+ */
+#define INA226_MAN_ID_VAL		(0x5449)
 /** 
  * INA226 Die ID Register address 
  * 	Default value: 0b0101010001001001 0x5449
  *	Type: R
  */
-#define INA226_DIE_ID_REG		0xFF
+#define INA226_DIE_ID_REG		(0xFF)
+/**
+ * INA226 Die ID value
+ */
+#define INA226_DIE_ID_VAL		(0x2260)
+/**
+ * INA226 Bus Voltage LSB value
+ */
+#define INA226_VBUS_LSB_VAL		0.00125f
+/**
+ * INA226 Shunt Voltage LSB value
+ */
+#define INA226_VSHUNT_LSB_VAL	0.0000025f
 
 /**
- * @enum _INA226_I2C_ADDRESS
+ * @enum _INA226_i2c_address
  * @brief Enum class that represent the available I2C addresses for the ina226, 
  * 		  these addresses depend on how pins A1 and A2 are connected. 
  * 		  The user has to take care when connecting multiple current sensor to 
@@ -102,11 +124,11 @@ typedef enum {
 	SCL_VS_ADDRESS = 0x9A,	/**< A1=SCL, A0=VS */
 	SCL_SDA_ADDRESS = 0x9C, /**< A1=SCL, A0=SDA */
 	SCL_SCL_ADDRESS = 0x9E	/**< A1=SCL, A0=SCL */ 
-} _INA226_I2C_ADDRESS;
+} INA226_i2c_address;
 
 
 /**
- * @struct _INA226_CONFIG_bits
+ * @struct _INA226_config_bits
  * @brief A structure to represent the bits of the Configuration register
  */
 typedef struct {
@@ -116,24 +138,21 @@ typedef struct {
 	uint16_t VBUSCT:3;		/**< Bus voltage conversion time */
 	uint16_t VSHCT:3;		/**< Shunt Voltage conversion time */ 
 	uint16_t MODE:3;		/**< Operating Mode */
-} _INA226_CONFIG_bits;
+} INA226_config_bits;
 
 /**
- * @union INA226_CONFIG
+ * @union INA226_config
  * @brief A union representing the Configuration register data, this allows us to
  * 		  handle the data structure in different ways
  */
 typedef union {
-	_INA226_CONFIG_bits bits;
-	uint16_t all;
-	struct {
-		uint8_t b_low;
-		uint8_t b_high;
-	}
-} INA226_CONFIG;
+	INA226_config_bits bits;
+	buffer_16b buffer;
+} INA226_config;
 
 /**
- * @enum that represents the different combinations for AVG bit settings
+ * @enum INA226_avg that represents the different combinations for AVG bit 
+ * settings
  */
 typedef enum {
 	AVG1	= 0b000, /**< 1 Sample avg */
@@ -144,10 +163,11 @@ typedef enum {
 	AVG256	= 0b101, /**< 256 Samples avg */
 	AVG512	= 0b110, /**< 512 Samples avg */
 	AVG1024	= 0b111, /**< 1024 Samples avg */ 
-} INA226_AVG_settings;
+} INA226_avg;
 
 /**
- * @enum that represents the different combinations for conversion time settings
+ * @enum INA226_ct that represents the different combinations for conversion 
+ * time settings
  */
 typedef enum {
 	140US  = 0b000, /**< 140uS conversion time */
@@ -158,10 +178,11 @@ typedef enum {
 	2116US = 0b101, /**< 2116uS conversion time */
 	4156US = 0b110, /**< 4156uS conversion time */
 	8244US = 0b111, /**< 8244uS conversion time */
-} INA226_CT_settings;
+} INA226_ct;
 
 /**
- * @enum that represents the different combinations for operating mode settings
+ * @enum INA226_mode that represents the different combinations for operating 
+ * mode settings
  */
 typedef enum {
 	POWER_DOWN 			= 0b000 | 0b100, /**< power down */
@@ -172,29 +193,39 @@ typedef enum {
 	BUS_VOLTAGE_CONT	= 0b110,		 /**< bus continuous */
 	SHUNT_AND_BUS_CONT 	= 0b111,		 /**< Shunt and bus continuous (def) */
 
-} INA226_MODE_settings;
+} INA226_mode;
 
 /**
- * @struct _INA226_MASK_ENABLE_bits
- * @brief Structure to represent the Mask/Enable register bits (R/W). 
- * 		  This register selects the function that is enabled to control the 
- * 		  Alert pin as well as how that pin works. If multiple functions are 
- * 		  enabled, the highest significant bit position Alert Function takes 
- * 		  priority and responds to the Alert Limit Trigger
+ * @enum INA226_mask_enable
+ * @brief enum that represents the Mask/Enable register bits (R/W) possible
+ * 		  values. This register selects the function that is enabled to control 
+ * 		  the Alert pin as well as how that pin works. 
+ * 		  If multiple functions are enabled, the highest significant bit 
+ * 		  position Alert Function takes priority and responds to the Alert 
+ * 		  Limit Trigger
  */
-typedef struct {
-	uint16_t SOL:1;			/**< Shunt Voltage over-voltage */
-	uint16_t SUL:1; 		/**< Shunt Voltage under-voltage */
-	uint16_t BOL:1;		 	/**< Bus voltage over-voltage */
-	uint16_t BUL:1;	 		/**< Bus voltage under-voltage */
-	uint16_t POL:1;			/**< Power over-limit */
-	uint16_t CNVR:1;		/**< Conversion Ready */
-	uint16_t RESERVED:5;	
-	uint16_t AFF:1;			/**< Alert function flag */
-	uint16_t CVRF:1;		/**< Conversion ready flag */
-	uint16_t OVF:1;			/**< Math Overflow flag */
-	uint16_t APOL:1;		/**< Alert Polarity bit */
-	uint16_t LEN:1;			/**< Alert Latch enable */
-} _INA226_MASK_ENABLE_bits;
+typedef enum {
+	SOL  =	0x8000,
+	SUL  =	0x4000,
+	BOL  =	0x2000,
+	BUL  =	0x1000,
+	POL  =	0x0800,
+	AFF  =	0x0010,
+	CVRF =	0X0008,
+	OVF	 =	0x0004,
+	APOL =	0x0002,
+	LEN  =	0x0001,
+} INA226_mask_enable;
+
+/**
+ * @union INA226_config
+ * @brief A union representing the Configuration register data, this allows us to
+ * 		  handle the data structure in different ways
+ */
+typedef union {
+	INA226_mask_enable_bits bits;
+	buffer_16b buffer;
+} INA226_mask_enable;
+
 
 #endif /* ina226_defs.h */
