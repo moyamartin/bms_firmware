@@ -7,8 +7,23 @@
  * 		  function. As an example, we have only defined the functionalty for
  * 		  STM32F407xx
  */
-static ina226_status ina226_writereg(INA226_i2c_address i2c_address,
-									 uint8_t reg, uint16_t value);
+static INA226_status ina226_writereg(INA226_i2c_address i2c_address,
+									 uint8_t reg, uint16_t value)
+{
+#if defined(USE_HAL_DRIVER) && defined(STM32F407xx)
+	INA226_buff tx_data;
+	tx_data.reg_address = reg;
+	tx_data.buffer.all = value;
+	if(HAL_I2C_Master_Transmit(&INA226_INTERFACE, (uint16_t) i2c_address,
+							   (uint8_t *) &tx_data, sizeof(INA226_buff), 
+							   INA226_TIMEOUT) != HAL_OK){
+		return I2C_TRANSMISSION_ERROR;
+	}
+	return OK;
+
+#elif defined(__AVR__)
+#endif
+}
 
 /**
  * @fn	  ina226_readreg
@@ -17,7 +32,22 @@ static ina226_status ina226_writereg(INA226_i2c_address i2c_address,
  * 		  function. As an example, we have only defined the functionalty for
  * 		  STM32F407xx
  */
-static uint16_t ina226_readreg(INA226_i2c_address i2c_address, uint8_t reg);
+static INA226_status ina226_readreg(INA226_i2c_address i2c_address, 
+									uint8_t reg, uint16_t * value);
+{ 
+#if defined(USE_HAL_DRIVER) && defined(STM32F407xx)
+	INA226_buff rx_data;
+	rx_data.reg_address = reg;
+	if(HAL_I2C_Master_Receive(&INA226_INTERFACE, (uint16_t) i2c_address, 
+							  (uint8_t *) &rx_data, sizeof(INA226_buff), 
+							  INA226_TIMEOUT) != HAL_OK) {
+		return I2C_TRANSMISSION_ERROR;
+	}
+	*value = rx_data.buffer.all;
+	return OK;
+#elif defined(__AVR__)
+#endif
+}
 
 /**
  * @fn	  calculate_current_lsb
