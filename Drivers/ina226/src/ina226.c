@@ -50,7 +50,7 @@ static uint16_t calculate_cal_val(float32_t r_shunt,
 	return (uint16_t) ((0.00512)/(current_LSB*r_shunt));
 }
 
-ina226_status ina226_init(INA226 * ina226, INA226_i2c_address address,
+INA226_status ina226_init(INA226 * ina226, INA226_i2c_address address,
 						  float32_t r_shunt, float32_t max_expected_current,	
 						  INA226_avg avg,
 						  INA226_ct vbusct, INA226_ct_settings vshct,
@@ -109,7 +109,7 @@ ina226_status ina226_init(INA226 * ina226, INA226_i2c_address address,
 }
 
 
-ina226_status ina226_reset(INA226 * ina226);
+INA226_status ina226_reset(INA226 * ina226);
 {
 	INA226_config_bits bits_buffer = ina226.config.bits;
 	bits_buffer.RST = 1;
@@ -149,35 +149,35 @@ float32_t ina226_get_pwr(INA226 * ina226)
 	return (float32_t) pwr_reg_val*ina226->current_LSB/1000;
 }
 
-ina226_status ina226_set_avg(INA226 * ina226, INA226_avg avg)
+INA226_status ina226_set_avg(INA226 * ina226, INA226_avg avg)
 {
 	ina226->config.bits.AVG = avg;	
 	return ina226_writereg(ina226_instance->address, INA226_CONFIG_REG,
 						   ina226_instance->config.buffer.all);
 }
 
-ina226_status ina226_set_vbus_ct(INA226 * ina226_instance, INA226_ct ct)
+INA226_status ina226_set_vbus_ct(INA226 * ina226_instance, INA226_ct ct)
 {
 	ina226_instance->config.bits.VBUSCT = ct;
 	return ina226_writereg(ina226_instance->address, INA226_CONFIG_REG,
 						   ina226_instance->config.buffer.all);
 }
 
-ina226_status ina226_set_vshunt_ct(INA226 * ina226_instance, INA226_ct ct)
+INA226_status ina226_set_vshunt_ct(INA226 * ina226_instance, INA226_ct ct)
 {
 	ina226_instance->config.bits.VSHCT = ct;
 	return ina226_writereg(ina226_instance->address, INA226_CONFIG_REG,
 						   ina226_instance->config.buffer.all);
 }
 
-ina226_status ina226_set_mode(INA226 * ina226_instance, INA226_mode mode)
+INA226_status ina226_set_mode(INA226 * ina226_instance, INA226_mode mode)
 {
 	ina226_instance->config.bits.mode = mode;
 	return ina226_writereg(ina226_instance->address, INA226_CONFIG_REG, 
 						   ina226_instance->config.buffer.all) 
 }
 
-ina226_status ina226_set_calibration(INA226 * ina226_instance, 
+INA226_status ina226_set_calibration(INA226 * ina226_instance, 
 									 float32_t r_shunt,
 									 float32_t max_expected_current)
 {
@@ -192,7 +192,7 @@ ina226_status ina226_set_calibration(INA226 * ina226_instance,
 						   cal_data_buffer);
 }
 
-ina226_status ina226_set_mask_enable(INA226 * ina226,
+INA226_status ina226_set_mask_enable(INA226 * ina226,
 									 INA226_mask_enable mask_enable)
 {
 	ina226_instance->mask_enable = mask_enable;
@@ -200,7 +200,7 @@ ina226_status ina226_set_mask_enable(INA226 * ina226,
 						   mask_enable);
 }
 
-ina226_status ina226_clear_flags(INA226 * ina226)
+INA226_status ina226_clear_flags(INA226 * ina226)
 {
 	uint16_t buffer = ina226_readreg(ina226->address, INA226_MASK_EN_REG);
 	return OK;
