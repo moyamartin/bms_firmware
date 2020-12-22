@@ -30,12 +30,17 @@
 	 *
 	 * We also asume that the I2C bus used is the hi2c1
 	 */
-	extern I2C_HandleTypeDef hi2c1
-	#define INA226_I2C_INTERFACe hi2c1
+	extern I2C_HandleTypeDef 	hi2c1
+	#define INA226_INTERFACE	hi2c1
+	#define INA226_TIMEOUT		1000
+#elif defined(__AVR__)
+
 #endif
 
 /**
- * @enum 
+ * @enum  INA226_status
+ * @brief defines several possible status of the ina226 driver to inform the
+ * 		  user the current result of an operation
  */
 typedef enum {
 	OK = 0,
@@ -46,7 +51,12 @@ typedef enum {
 	I2C_TRANSMISSION_ERROR = -5,
 	CAL_ERROR = -6,
 	MASK_EN_ERROR = -7,
-} ina226_status;
+} INA226_status;
+
+typedef struct {
+	uint8_t reg_address;
+	buffer_16b buffer;
+} INA226_buff;
 
 /**
  * @struct INA226
