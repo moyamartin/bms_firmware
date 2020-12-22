@@ -18,6 +18,8 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
+#include "battery_model.h"
+#include "ina226.h"
 #include "main.h"
 
 /* Private variables ---------------------------------------------------------*/

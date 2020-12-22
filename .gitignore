@@ -10,3 +10,12 @@ Test/objs
 *.out
 gcov
 gcov.html
+
+# ignore STM32CubeMX files
+.mxproject
+
+# ignore gdb files
+.gdb_history
+
+# misc
+.txt

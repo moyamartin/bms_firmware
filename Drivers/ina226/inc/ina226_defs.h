@@ -170,14 +170,14 @@ typedef enum {
  * time settings
  */
 typedef enum {
-	140US  = 0b000, /**< 140uS conversion time */
-	204US  = 0b001, /**< 204uS conversion time */
-	332US  = 0b010, /**< 332uS conversion time */
-	588US  = 0b011, /**< 558uS conversion time */
-	1100US = 0b100, /**< 1100uS conversion time DEFAULT */
-	2116US = 0b101, /**< 2116uS conversion time */
-	4156US = 0b110, /**< 4156uS conversion time */
-	8244US = 0b111, /**< 8244uS conversion time */
+	t140US  = 0b000, /**< 140uS conversion time */
+	t204US  = 0b001, /**< 204uS conversion time */
+	t332US  = 0b010, /**< 332uS conversion time */
+	t588US  = 0b011, /**< 558uS conversion time */
+	t1100US = 0b100, /**< 1100uS conversion time DEFAULT */
+	t2116US = 0b101, /**< 2116uS conversion time */
+	t4156US = 0b110, /**< 4156uS conversion time */
+	t8244US = 0b111, /**< 8244uS conversion time */
 } INA226_ct;
 
 /**
