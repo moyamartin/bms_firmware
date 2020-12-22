@@ -92,10 +92,10 @@ typedef struct {
  * 			   INA226_ct_settings enum typedef
  * @params[in] mode: ina226 operation mode., this value is defined by the
  * 			   INA226_mode_settings enum typedef
- * @return ina226_status [OK|MAN_ID_MISMATCH|DIE_ID_MISMATCH|CONFIG_ERROR|
+ * @return INA226_status [OK|MAN_ID_MISMATCH|DIE_ID_MISMATCH|CONFIG_ERROR|
  * 						  CAL_ERROR|MASK_EN_ERROR]
  */
-ina226_status ina226_init(INA226 * ina226, float32_t r_shunt, 
+INA226_status ina226_init(INA226 * ina226, float32_t r_shunt, 
 						  float32_t max_expected_current, 
 						  INA226_i2c_address address, INA226_avg_settings avg,
 						  INA226_ct_settings vbusct, INA226_ct_settings vshct,
@@ -108,7 +108,7 @@ ina226_status ina226_init(INA226 * ina226, float32_t r_shunt,
  * @params[in] ina226: INA226 struct instance that will be reset
  * @returns [OK|CONFIG_ERROR]
  */
-ina226_status ina226_reset(INA226 * ina226);
+INA226_status ina226_reset(INA226 * ina226);
 
 /**
  * @func ina226_get_current
@@ -155,7 +155,7 @@ float32_t ina226_get_pwr(INA226 * ina226);
  * 			   set
  * @returns ina226_state [OK|I2C_TRANSMISSION_ERROR]
  */
-ina226_status ina226_set_avg(INA226 * ina226_instance, INA226_avg avg);
+INA226_status ina226_set_avg(INA226 * ina226_instance, INA226_avg avg);
 
 /**
  * @func ina226_set_vbus_ct
@@ -166,7 +166,7 @@ ina226_status ina226_set_avg(INA226 * ina226_instance, INA226_avg avg);
  * 			   conversion time
  * @returns ina226_state [OK|I2C_TRANSMISSION_ERROR]
  */
-ina226_status ina226_set_vbus_ct(INA226 * ina226_instance, INA226_ct ct);
+INA226_status ina226_set_vbus_ct(INA226 * ina226_instance, INA226_ct ct);
 
 /**
  * @func ina226_set_vshunt_ct
@@ -177,16 +177,16 @@ ina226_status ina226_set_vbus_ct(INA226 * ina226_instance, INA226_ct ct);
  * 			   conversion time
  * @returns ina226_state [OK|I2C_TRANSMISSION_ERROR]
  */
-ina226_status ina226_set_vshunt_ct(INA226 * ina226_instance, INA226_ct ct);
+INA226_status ina226_set_vshunt_ct(INA226 * ina226_instance, INA226_ct ct);
 
 /**
  * @func  ina226_set_mode
  * @brief Sets the operating mode for the ina226 instance
  * @params[in] ina226: INA226 data structure that holds the instance to modify
  * @params[in] mode: Operation mode modeled by the INA226_mode enum typedef
- * @return 	   ina226_status enum [OK|I2C_TRANSMISSION_ERROR]
+ * @return 	   INA226_status enum [OK|I2C_TRANSMISSION_ERROR]
  */
-ina226_status ina226_set_mode(INA226 * ina226, INA226_mode mode);
+INA226_status ina226_set_mode(INA226 * ina226, INA226_mode mode);
 
 /**
  * @func  ina226_set_calibration
@@ -199,9 +199,9 @@ ina226_status ina226_set_mode(INA226 * ina226, INA226_mode mode);
  * @params[in] r_shunt: float32_t value of the r_shunt connected to IN+ and IN-
  * @params[in] max_expected_current: float32_t value that represents the maximum
  *			   expected current that the sensur will measure
- * @returns ina226_status [OK | I2C_TRANSMISSION_ERROR]
+ * @returns INA226_status [OK | I2C_TRANSMISSION_ERROR]
  */
-ina226_status ina226_set_calibration(INA226 * ina226, 
+INA226_status ina226_set_calibration(INA226 * ina226, 
 									 float32_t r_shunt, 
 									 float32_t max_expected_current);
 
@@ -216,9 +216,9 @@ ina226_status ina226_set_calibration(INA226 * ina226,
  * @params[in] r_shunt: float32_t value of the r_shunt connected to IN+ and IN-
  * @params[in] max_expected_current: float32_t value that represents the maximum
  *			   expected current that the sensur will measure
- * @returns ina226_status [OK | I2C_TRANSMISSION_ERROR]
+ * @returns INA226_status [OK | I2C_TRANSMISSION_ERROR]
  */
-ina226_status ina226_set_mask_enable(INA226 * ina226, 
+INA226_status ina226_set_mask_enable(INA226 * ina226, 
 									 INA226_mask_enable maks_enable);
 
 #endif /* ina226.h */
