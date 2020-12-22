@@ -30,7 +30,7 @@
  * 		  the low and high 8 bits of a uint16_t 
  */
 typedef union { 
-	uint16_t b_all;
+	uint16_t all;
 	struct {
 		uint8_t b_low;
 		uint8_t b_high;

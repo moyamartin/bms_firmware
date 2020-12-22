@@ -32,20 +32,20 @@
  *	Default value: 0b00000000 00000000 0x0000
  *	Type: R
  */
-#define INA226_SHUNT_V_REG		(0x01)
+#define INA226_VSHUNT_REG		(0x01)
 
 /** 
  * INA226 Bus Voltage Register address 
  * 	Default value: 0b00000000 00000000 0x0000
  *	Type: R
  */
-#define INA226_BUS_V_REG		(0x02)
+#define INA226_VBUS_REG			(0x02)
 /** 
  * INA226 Power Register address 
  * 	Default value: 0b00000000 00000000 0x0000
  *	Type: R
  */
-#define INA226_PWR_REG		(0x03)
+#define INA226_PWR_REG			(0x03)
 /** 
  * INA226 Current Register address 
  * 	Default value: 0b00000000 00000000 0x0000
@@ -223,9 +223,9 @@ typedef enum {
  * 		  handle the data structure in different ways
  */
 typedef union {
-	INA226_mask_enable_bits bits;
+	INA226_mask_enable bits;
 	buffer_16b buffer;
-} INA226_mask_enable;
+} INA226_mask_enable_buffer;
 
 
 #endif /* ina226_defs.h */

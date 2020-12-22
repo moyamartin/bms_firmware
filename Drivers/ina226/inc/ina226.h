@@ -30,7 +30,7 @@
 	 *
 	 * We also asume that the I2C bus used is the hi2c1
 	 */
-	extern I2C_HandleTypeDef 	hi2c1
+	extern I2C_HandleTypeDef 	hi2c1;
 	#define INA226_INTERFACE	hi2c1
 	#define INA226_TIMEOUT		1000
 #elif defined(__AVR__)
@@ -51,6 +51,7 @@ typedef enum {
 	I2C_TRANSMISSION_ERROR = -5,
 	CAL_ERROR = -6,
 	MASK_EN_ERROR = -7,
+	FLAGS_NOT_CLEARED = -8,
 } INA226_status;
 
 typedef struct {
@@ -95,11 +96,10 @@ typedef struct {
  * @return INA226_status [OK|MAN_ID_MISMATCH|DIE_ID_MISMATCH|CONFIG_ERROR|
  * 						  CAL_ERROR|MASK_EN_ERROR]
  */
-INA226_status ina226_init(INA226 * ina226, float32_t r_shunt, 
-						  float32_t max_expected_current, 
-						  INA226_i2c_address address, INA226_avg_settings avg,
-						  INA226_ct_settings vbusct, INA226_ct_settings vshct,
-						  INA226_mode_settings mode);
+INA226_status ina226_init(INA226 * ina226, INA226_i2c_address address,
+						  float32_t r_shunt, float32_t max_expected_current, 
+						  INA226_avg avg, INA226_ct vbusct, INA226_ct vshct,
+						  INA226_mode mode, INA226_mask_enable mask_enable);
 
 /**
  * @func ina226_reset
@@ -115,36 +115,40 @@ INA226_status ina226_reset(INA226 * ina226);
  * @brief Reads the ina226 current register
  * @params[in] ina226: INA226 struct instance that holds the data structure for
  * 			   the sensor
- * @returns float32_t value holding the avg current measured
+ * @returns INA226_status indicating if the operation was successful or not
+ * 			[OK|I2C_TRANSMISSION_ERROR]
  */
-float32_t ina226_get_current(INA226 * ina226);
+INA226_status ina226_get_current(INA226 * ina226, float32_t * current);
 
 /**
  * @func ina226_get_vbus
  * @brief Reads the ina226 vbus register and the avg measured value
  * @params[in] ina226: INA226 struct instance that holds the data structure for
  * 			   the sensor
- * @returns float32_t value holding the avg Vbus measured
+ * @returns INA226_status indicating if the operation was successful or not
+ * 			[OK|I2C_TRANSMISSION_ERROR]
  */
-float32_t ina226_get_vbus(INA226 * ina226);
+INA226_status ina226_get_vbus(INA226 * ina226, float32_t * vbus);
 
 /**
  * @func ina226_get_vbus
  * @brief Reads the ina226 vbus register and gets the avg measured value
  * @params[in] ina226: INA226 struct instance that holds the data structure for
  * 			   the sensor
- * @returns float32_t value holding the avg Vbus measured
+ * @returns INA226_status indicating if the operation was successful or not
+ * 			[OK|I2C_TRANSMISSION_ERROR]
  */
-float32_t ina226_get_vshunt(INA226 * ina226);
+INA226_status ina226_get_vshunt(INA226 * ina226, float32_t * vshunt);
 
 /**
  * @func ina226_get_pwr
  * @brief Reads the ina226 pwr register and gets the avg measured value
  * @params[in] ina226: INA226 struct instance that holds the data structure for
  * 			   the sensor
- * @returns float32_t value holding the avg measured pwr
+ * @returns INA226_status indicating if the operation was successful or not
+ * 			[OK|I2C_TRANSMISSION_ERROR]
  */
-float32_t ina226_get_pwr(INA226 * ina226);
+INA226_status ina226_get_pwr(INA226 * ina226, float32_t * pwr);
 
 /**
  * @func ina226_set_avg
@@ -153,7 +157,8 @@ float32_t ina226_get_pwr(INA226 * ina226);
  * 					   the sensor
  * @params[in] avg: INA226_avg data structure that represents the avg value to
  * 			   set
- * @returns ina226_state [OK|I2C_TRANSMISSION_ERROR]
+ * @returns INA226_status indicating if the operation was successful or not
+ * 			[OK|I2C_TRANSMISSION_ERROR]
  */
 INA226_status ina226_set_avg(INA226 * ina226_instance, INA226_avg avg);
 

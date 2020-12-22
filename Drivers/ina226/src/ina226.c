@@ -33,7 +33,7 @@ static INA226_status ina226_writereg(INA226_i2c_address i2c_address,
  * 		  STM32F407xx
  */
 static INA226_status ina226_readreg(INA226_i2c_address i2c_address, 
-									uint8_t reg, uint16_t * value);
+									uint8_t reg, uint16_t * value)
 { 
 #if defined(USE_HAL_DRIVER) && defined(STM32F407xx)
 	INA226_buff rx_data;
@@ -61,7 +61,7 @@ static INA226_status ina226_readreg(INA226_i2c_address i2c_address,
  */
 static float32_t calculate_current_lsb(float32_t max_expected_current)
 {
-	return max_expected_current >> 15;
+	return max_expected_current/32768;
 }
 
 /**
@@ -82,10 +82,8 @@ static uint16_t calculate_cal_val(float32_t r_shunt,
 
 INA226_status ina226_init(INA226 * ina226, INA226_i2c_address address,
 						  float32_t r_shunt, float32_t max_expected_current,	
-						  INA226_avg avg,
-						  INA226_ct vbusct, INA226_ct_settings vshct,
-						  INA226_mode mode,
-						  INA226_mask_enable mask_enable)
+						  INA226_avg avg, INA226_ct vbusct, INA226_ct vshct, 
+						  INA226_mode mode, INA226_mask_enable mask_enable)
 {
 	INA226_config config_buffer;		
 	config_buffer.bits.AVG = avg;
@@ -97,11 +95,19 @@ INA226_status ina226_init(INA226 * ina226, INA226_i2c_address address,
 	 * first check if we get the correct Die Ids and Manufacturing Ids from the
 	 * chip
 	 */
-	if(ina226_readreg(address, INA226_MAN_ID_REG) != INA226_MAN_ID_VAL){
-		return MAN_ID_MISMATCH;
+	uint16_t man_id_val;
+	if(ina226_readreg(address, INA226_MAN_ID_REG, &man_id_val) != OK){
+		return I2C_TRANSMISSION_ERROR;
 	}
 
-	if(ina226_readreg(address, INA226_DIE_ID_REG) != INA226_DIE_ID_REG){
+	if(man_id_val != INA226_MAN_ID_VAL){
+		return MAN_ID_MISMATCH;
+	}
+	uint16_t die_id_val;
+	if(ina226_readreg(address, INA226_DIE_ID_REG, &die_id_val) != OK){
+		return I2C_TRANSMISSION_ERROR;
+	}
+	if(die_id_val != INA226_DIE_ID_VAL){
 		return DIE_ID_MISMATCH;
 	}
 
@@ -116,7 +122,7 @@ INA226_status ina226_init(INA226 * ina226, INA226_i2c_address address,
 	// configuration is different from the default values
 	if(config_buffer.buffer.all != INA226_CONFIG_DEFAULT){
 		if(ina226_writereg(address, INA226_CONFIG_REG, 
-						   ina226->configs.all) != 
+						   ina226->config.buffer.all) != 
 				I2C_TRANSMISSION_ERROR){
 			return CONFIG_ERROR;
 		}
@@ -124,7 +130,7 @@ INA226_status ina226_init(INA226 * ina226, INA226_i2c_address address,
 	ina226->config = config_buffer;
 	ina226->current_active_mode = mode;
 
-	if(ina226_set_calibration(ina226_instance, r_shunt, mad_expected_current) 
+	if(ina226_set_calibration(ina226, r_shunt, max_expected_current) 
 			!= OK){
 		return CAL_ERROR;
 	}
@@ -134,104 +140,120 @@ INA226_status ina226_init(INA226 * ina226, INA226_i2c_address address,
 			I2C_TRANSMISSION_ERROR){
 		return MASK_EN_ERROR;
 	}
-	ina226_instance->mask_enable = mask_enable;
+	ina226->mask_enable = mask_enable;
 	return OK;	
 }
 
 
-INA226_status ina226_reset(INA226 * ina226);
+INA226_status ina226_reset(INA226 * ina226)
 {
-	INA226_config_bits bits_buffer = ina226.config.bits;
-	bits_buffer.RST = 1;
-	if(ina226_writreg(address, INA226_CONFIG_REG, bits_buffer) 
-			!= OK){
+	ina226->config.bits.RST = 1;
+	if(ina226_writereg(ina226->address, INA226_CONFIG_REG, 
+					   ina226->config.buffer.all) != OK){
 		return CONFIG_ERROR;
 	}
-	ina226_instance.config.bits = bits_buffer;
 	return OK;
 }
 
-float32_t ina226_get_current(INA226 * ina226)
+INA226_status ina226_get_current(INA226 * ina226, float32_t * current)
 {
-	uint16_t current_reg_val = ina226_readreg(ina226->address, 
-											  INA226_CURRENT_REG)
-	return (float32_t) current_reg_val*ina226->current_LSB;
+	uint16_t current_reg_val;
+	if(ina226_readreg(ina226->address, INA226_CURRENT_REG, 
+					  &current_reg_val) != OK){
+		return I2C_TRANSMISSION_ERROR;
+	}
+	*current = (float32_t) current_reg_val*ina226->current_LSB;
+	return OK;
 }
 
-float32_t ina226_get_vbus(INA226 * ina226)
+INA226_status ina226_get_vbus(INA226 * ina226, float32_t * vbus)
 {
-	uint16_t vbus_reg_val = ina226_readreg(ina226->address,
-										   INA226_VBUS_REG);
-	return (float32_t) vbus_reg_val*INA226_VBUS_LSB_VAL
+	uint16_t vbus_reg_val;
+	if(ina226_readreg(ina226->address, INA226_VBUS_REG, &vbus_reg_val) != OK){
+		return I2C_TRANSMISSION_ERROR;
+	}
+	*vbus = (float32_t) vbus_reg_val*INA226_VBUS_LSB_VAL;
+	return OK;
 }
 
-float32_t ina226_get_vshunt(INA226 * ina226)
+INA226_status ina226_get_vshunt(INA226 * ina226, float32_t * vshunt)
 {
-	uint16_t vshunt_reg_val = ina226_readreg(ina226->address,
-											 INA226_VSHUNT_REG);
-	return (float32_t) vshunt_reg_val*INA226_VSHUNT_LSB_VAL;
+	uint16_t vshunt_reg_val;
+	if(ina226_readreg(ina226->address, INA226_VSHUNT_REG, 
+					  &vshunt_reg_val) != OK){
+		return I2C_TRANSMISSION_ERROR;
+	}
+	*vshunt = (float32_t) vshunt_reg_val*INA226_VSHUNT_LSB_VAL;
+	return OK;
 }
 
-float32_t ina226_get_pwr(INA226 * ina226)
+INA226_status ina226_get_pwr(INA226 * ina226, float32_t * pwr)
 {
-	uint16_t pwr_reg_val = ina226_readreg(ina226_address,
-										  INA226_PWR_REG);
-	return (float32_t) pwr_reg_val*ina226->current_LSB/1000;
+	uint16_t pwr_reg_val;
+	if(ina226_readreg(ina226->address, INA226_PWR_REG, &pwr_reg_val) != OK) {
+		return I2C_TRANSMISSION_ERROR;
+	}
+	*pwr= (float32_t) pwr_reg_val*ina226->current_LSB/1000;
+	return OK;
 }
 
 INA226_status ina226_set_avg(INA226 * ina226, INA226_avg avg)
 {
 	ina226->config.bits.AVG = avg;	
-	return ina226_writereg(ina226_instance->address, INA226_CONFIG_REG,
-						   ina226_instance->config.buffer.all);
+	return ina226_writereg(ina226->address, INA226_CONFIG_REG,
+						   ina226->config.buffer.all);
 }
 
-INA226_status ina226_set_vbus_ct(INA226 * ina226_instance, INA226_ct ct)
+INA226_status ina226_set_vbus_ct(INA226 * ina226, INA226_ct ct)
 {
-	ina226_instance->config.bits.VBUSCT = ct;
-	return ina226_writereg(ina226_instance->address, INA226_CONFIG_REG,
-						   ina226_instance->config.buffer.all);
+	ina226->config.bits.VBUSCT = ct;
+	return ina226_writereg(ina226->address, INA226_CONFIG_REG,
+						   ina226->config.buffer.all);
 }
 
-INA226_status ina226_set_vshunt_ct(INA226 * ina226_instance, INA226_ct ct)
+INA226_status ina226_set_vshunt_ct(INA226 * ina226, INA226_ct ct)
 {
-	ina226_instance->config.bits.VSHCT = ct;
-	return ina226_writereg(ina226_instance->address, INA226_CONFIG_REG,
-						   ina226_instance->config.buffer.all);
+	ina226->config.bits.VSHCT = ct;
+	return ina226_writereg(ina226->address, INA226_CONFIG_REG,
+						   ina226->config.buffer.all);
 }
 
-INA226_status ina226_set_mode(INA226 * ina226_instance, INA226_mode mode)
+INA226_status ina226_set_mode(INA226 * ina226, INA226_mode mode)
 {
-	ina226_instance->config.bits.mode = mode;
-	return ina226_writereg(ina226_instance->address, INA226_CONFIG_REG, 
-						   ina226_instance->config.buffer.all) 
+	ina226->config.bits.MODE = mode;
+	return ina226_writereg(ina226->address, INA226_CONFIG_REG, 
+						   ina226->config.buffer.all);
 }
 
-INA226_status ina226_set_calibration(INA226 * ina226_instance, 
+INA226_status ina226_set_calibration(INA226 * ina226, 
 									 float32_t r_shunt,
 									 float32_t max_expected_current)
 {
 	// Calculate new current_LSB
-	ina226_instance->current_LSB = calculate_current_lsb(max_expected_current);
+	ina226->current_LSB = calculate_current_lsb(max_expected_current);
 	// Calculate calibration value
 	uint16_t cal_data_buffer = calculate_cal_val(r_shunt, 
-												 ina226_instance->current_LSB);
-	ina226_instance->r_shunt = r_shunt;
-	ina226_instance->max_expected_cirrent = max_expected_current;
-	return ina226_writereg(ina226_instance->address, INA226_CAL_REG, 
+												 ina226->current_LSB);
+	ina226->r_shunt = r_shunt;
+	ina226->max_expected_current = max_expected_current;
+	return ina226_writereg(ina226->address, INA226_CAL_REG, 
 						   cal_data_buffer);
 }
 
 INA226_status ina226_set_mask_enable(INA226 * ina226,
 									 INA226_mask_enable mask_enable)
 {
-	ina226_instance->mask_enable = mask_enable;
-	return ina226_writereg(ina226_instance->address, INA226_MASK_EN_REG,
+	ina226->mask_enable = mask_enable;
+	return ina226_writereg(ina226->address, INA226_MASK_EN_REG,
 						   mask_enable);
 }
 
 INA226_status ina226_clear_flags(INA226 * ina226)
 {
-	uint16_t buffer = ina226_readreg(ina226->address, INA226_MASK_EN_REG);
+	uint16_t buffer;
+	if(ina226_readreg(ina226->address, INA226_MASK_EN_REG, 
+					  &buffer) != OK) {
+		return FLAGS_NOT_CLEARED;
+	}
 	return OK;
 }
