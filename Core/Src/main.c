@@ -1,10 +1,8 @@
+/* USER CODE BEGIN Header */
 /**
  ******************************************************************************
- * @file            :   main.c
- * @brief           :   Main program body
- * @author          :   CECARRELLI, Federico    (fedec88@gmail.com) 
- *                      MOYA, Martin            (moyamartin1@gmail.com)      
- *                      SANTOS, Lucio           (lusho2206@gmail.com)
+ * @file           : main.c
+ * @brief          : Main program body
  ******************************************************************************
  * @attention
  *
@@ -21,32 +19,13 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "battery_model.h"
-#include "definitions.h"
+#include "ina226.h"
 #include "logging.h"
 #include "main.h"
-#include "stm32f4xx_lib_ina226.h"
-
-
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
-
-/* USER CODE END Includes */
-
-/* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN PTD */
-
-/* USER CODE END PTD */
-
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+I2C_HandleTypeDef hi2c1;
+INA226 current_sensor;
 
 /* USER CODE BEGIN PV */
 
@@ -55,6 +34,7 @@
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_I2C1_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -92,21 +72,28 @@ int main(void)
 
 	/* Initialize all configured peripherals */
 	MX_GPIO_Init();
+	MX_I2C1_Init();
+	ina226_reset(&current_sensor);
+	ina226_init(&current_sensor, GND_GND_ADDRESS, 0.1, 3.2f, AVG1, 
+				t1100US, t1100US, SHUNT_AND_BUS_CONT, DEFAULT);
+
 	/* USER CODE BEGIN 2 */
 
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
-
-
+	float32_t current, pwr, vbus, vshunt;
+	_DEBUG("Start measurements\n");
 	while (1)
 	{
-		/* USER CODE END WHILE */
-		_DEBUG("Hello world!\n");
-		//printf("Hello world\n");
-		HAL_Delay(1000);
-		/* USER CODE BEGIN 3 */
+		HAL_Delay(1500);
+		ina226_get_vbus(&current_sensor, &vbus);
+		ina226_get_current(&current_sensor, &current);
+		ina226_get_vshunt(&current_sensor, &vshunt);
+		ina226_get_pwr(&current_sensor, &pwr);
+		_DEBUG("I: %.3f P: %.3f V_shunt: %.3f V_bus: %.3f\n", current, pwr, 
+			   vshunt, vbus);
 	}
 	/* USER CODE END 3 */
 }
@@ -152,6 +139,40 @@ void SystemClock_Config(void)
 	{
 		Error_Handler();
 	}
+}
+
+/**
+ * @brief I2C1 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_I2C1_Init(void)
+{
+
+	/* USER CODE BEGIN I2C1_Init 0 */
+
+	/* USER CODE END I2C1_Init 0 */
+
+	/* USER CODE BEGIN I2C1_Init 1 */
+
+	/* USER CODE END I2C1_Init 1 */
+	hi2c1.Instance = I2C1;
+	hi2c1.Init.ClockSpeed = 100000;
+	hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
+	hi2c1.Init.OwnAddress1 = 0;
+	hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+	hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+	hi2c1.Init.OwnAddress2 = 0;
+	hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+	hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+	if (HAL_I2C_Init(&hi2c1) != HAL_OK)
+	{
+		Error_Handler();
+	}
+	/* USER CODE BEGIN I2C1_Init 2 */
+
+	/* USER CODE END I2C1_Init 2 */
+
 }
 
 /**
