@@ -34,7 +34,7 @@ typedef union {
 	struct {
 		uint8_t b_low;
 		uint8_t b_high;
-	};
+	} separation;
 } buffer_16b;
 
 #endif /* INC_DEFINITIONS_H_ */

@@ -132,12 +132,12 @@ typedef enum {
  * @brief A structure to represent the bits of the Configuration register
  */
 typedef struct {
-	uint16_t RST:1;		 	/**< Reset bit. Set to '1' generates system rst */
-	uint16_t Reserved:3; 	/**< Reserved bits */
-	uint16_t AVG:3;			/**< Averaging Mode see datasht for combinations */
-	uint16_t VBUSCT:3;		/**< Bus voltage conversion time */
-	uint16_t VSHCT:3;		/**< Shunt Voltage conversion time */ 
 	uint16_t MODE:3;		/**< Operating Mode */
+	uint16_t VSHCT:3;		/**< Shunt Voltage conversion time */ 
+	uint16_t VBUSCT:3;		/**< Bus voltage conversion time */
+	uint16_t AVG:3;			/**< Averaging Mode see datasht for combinations */
+	uint16_t Reserved:3; 	/**< Reserved bits */
+	uint16_t RST:1;		 	/**< Reset bit. Set to '1' generates system rst */
 } INA226_config_bits;
 
 /**
