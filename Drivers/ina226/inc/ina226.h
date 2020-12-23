@@ -33,6 +33,9 @@
 	extern I2C_HandleTypeDef 	hi2c1;
 	#define INA226_INTERFACE	hi2c1
 	#define INA226_TIMEOUT		1000
+	#define INA226_RX_BUFF_SIZE	sizeof(uint16_t)
+	#define INA226_TX_BUFF_SIZE sizeof(uint16_t)
+	#define INA226_ADDRESS_SIZE	sizeof(uint8_t)
 #elif defined(__AVR__)
 
 #endif

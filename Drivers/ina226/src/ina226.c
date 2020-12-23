@@ -6,17 +6,18 @@
  * 		  The user of this library is responsible of defining this 
  * 		  function. As an example, we have only defined the functionalty for
  * 		  STM32F407xx
+ * @params[in] i2c_address: INA226_i2c_address enum address pointing to the
+ * 			   desired address
+ * @params[in] reg: register address to write to
+ * @params[in] value: 16 bits value to write to register
  */
 static INA226_status ina226_writereg(INA226_i2c_address i2c_address,
 									 uint8_t reg, uint16_t value)
 {
 #if defined(USE_HAL_DRIVER) && defined(STM32F407xx)
-	INA226_buff tx_data;
-	tx_data.reg_address = reg;
-	tx_data.buffer.all = value;
-	if(HAL_I2C_Master_Transmit(&INA226_INTERFACE, (uint16_t) i2c_address,
-							   (uint8_t *) &tx_data, sizeof(INA226_buff), 
-							   INA226_TIMEOUT) != HAL_OK){
+	if(HAL_I2C_Mem_Write(&INA226_INTERFACE, (uint16_t) i2c_address,
+							   reg, INA226_ADDRESS_SIZE, (uint8_t *) &value,
+							   INA226_TX_BUFF_SIZE, INA226_TIMEOUT) != HAL_OK){
 		return I2C_TRANSMISSION_ERROR;
 	}
 	return OK;
@@ -36,14 +37,13 @@ static INA226_status ina226_readreg(INA226_i2c_address i2c_address,
 									uint8_t reg, uint16_t * value)
 { 
 #if defined(USE_HAL_DRIVER) && defined(STM32F407xx)
-	INA226_buff rx_data;
-	rx_data.reg_address = reg;
-	if(HAL_I2C_Master_Receive(&INA226_INTERFACE, (uint16_t) i2c_address, 
-							  (uint8_t *) &rx_data, sizeof(INA226_buff), 
-							  INA226_TIMEOUT) != HAL_OK) {
+	uint16_t rx_data;
+	if(HAL_I2C_Mem_Read(&INA226_INTERFACE, (uint16_t) i2c_address, 
+							  reg, INA226_ADDRESS_SIZE, (uint8_t *)&rx_data, 
+							  INA226_RX_BUFF_SIZE, INA226_TIMEOUT) != HAL_OK) {
 		return I2C_TRANSMISSION_ERROR;
 	}
-	*value = rx_data.buffer.all;
+	*value = ((rx_data >> 8) & 0x00FF) | ((rx_data << 8) & 0xFF00);
 	return OK;
 #elif defined(__AVR__)
 #endif
@@ -121,9 +121,9 @@ INA226_status ina226_init(INA226 * ina226, INA226_i2c_address address,
 	// set ina226 configuration register if, and only if, the initialization
 	// configuration is different from the default values
 	if(config_buffer.buffer.all != INA226_CONFIG_DEFAULT){
-		if(ina226_writereg(address, INA226_CONFIG_REG, 
-						   ina226->config.buffer.all) != 
-				I2C_TRANSMISSION_ERROR){
+		if(ina226_writereg(ina226->address, INA226_CONFIG_REG, 
+						   config_buffer.buffer.all) != 
+				OK){
 			return CONFIG_ERROR;
 		}
 	}
@@ -137,7 +137,7 @@ INA226_status ina226_init(INA226 * ina226, INA226_i2c_address address,
 
 	// set ina226 mask/enable register data
 	if(ina226_writereg(address, INA226_MASK_EN_REG, mask_enable) != 
-			I2C_TRANSMISSION_ERROR){
+			OK){
 		return MASK_EN_ERROR;
 	}
 	ina226->mask_enable = mask_enable;

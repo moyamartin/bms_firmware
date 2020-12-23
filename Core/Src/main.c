@@ -1,25 +1,26 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
-  ******************************************************************************
-  * @attention
-  *
-  * <h2><center>&copy; Copyright (c) 2020 STMicroelectronics.
-  * All rights reserved.</center></h2>
-  *
-  * This software component is licensed by ST under BSD 3-Clause license,
-  * the "License"; You may not use this file except in compliance with the
-  * License. You may obtain a copy of the License at:
-  *                        opensource.org/licenses/BSD-3-Clause
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * @file           : main.c
+ * @brief          : Main program body
+ ******************************************************************************
+ * @attention
+ *
+ * <h2><center>&copy; Copyright (c) 2020 STMicroelectronics.
+ * All rights reserved.</center></h2>
+ *
+ * This software component is licensed by ST under BSD 3-Clause license,
+ * the "License"; You may not use this file except in compliance with the
+ * License. You may obtain a copy of the License at:
+ *                        opensource.org/licenses/BSD-3-Clause
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "battery_model.h"
 #include "ina226.h"
+#include "logging.h"
 #include "main.h"
 
 /* Private variables ---------------------------------------------------------*/
@@ -72,7 +73,8 @@ int main(void)
 	/* Initialize all configured peripherals */
 	MX_GPIO_Init();
 	MX_I2C1_Init();
-	ina226_init(&current_sensor, )
+	ina226_init(&current_sensor, GND_GND_ADDRESS, 100.0f, 15.0f, AVG1, 
+				t1100US, t1100US, SHUNT_AND_BUS_CONT, 0x00);
 
 	/* USER CODE BEGIN 2 */
 
@@ -80,13 +82,15 @@ int main(void)
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
-
-
+	float32_t current, pwr, vbus;
+	_DEBUG("HELLO");
 	while (1)
 	{
-		/* USER CODE END WHILE */
-
-		/* USER CODE BEGIN 3 */
+		ina226_get_vbus(&current_sensor, &vbus);
+		ina226_get_current(&current_sensor, &current);
+		ina226_get_pwr(&current_sensor, &pwr);
+		_DEBUG("I: %.2f W: %.2f V: %.2f", current, pwr, vbus);
+		HAL_Delay(1000);
 	}
 	/* USER CODE END 3 */
 }
