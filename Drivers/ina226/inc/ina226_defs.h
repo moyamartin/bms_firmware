@@ -211,10 +211,11 @@ typedef enum {
 	BUL  =	0x1000,
 	POL  =	0x0800,
 	AFF  =	0x0010,
-	CVRF =	0X0008,
+	CVRF =	0x0008,
 	OVF	 =	0x0004,
 	APOL =	0x0002,
 	LEN  =	0x0001,
+	DEFAULT = 0x0000,
 } INA226_mask_enable;
 
 /**
