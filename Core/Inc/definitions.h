@@ -25,7 +25,7 @@
 
 
 /**
- * @union 16b_buffer;
+ * @union 16b_buffer
  * @brief Union representing a buffer of 16 bits, that allows you to access to
  * 		  the low and high 8 bits of a uint16_t 
  */
@@ -36,5 +36,13 @@ typedef union {
 		uint8_t b_high;
 	} separation;
 } buffer_16b;
+
+
+/**
+ * @func swap_16b
+ * @brief swaps the high 8 bits with the 8 low bits of an unsigned data 
+ * structure of 16 bits
+ */
+void swap_16b(uint16_t * source);
 
 #endif /* INC_DEFINITIONS_H_ */

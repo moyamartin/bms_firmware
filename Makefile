@@ -146,7 +146,7 @@ LDSCRIPT = STM32F407VGTx_FLASH.ld
 # libraries
 LIBS = -lc -lm -lnosys -larm_cortexM4lf_math
 LIBDIR = -LDrivers/CMSIS/DSP/Lib/GCC
-LDFLAGS = $(MCU) -specs=nano.specs -specs=rdimon.specs -lc -lrdimon \
+LDFLAGS = $(MCU) -specs=rdimon.specs -lc -lrdimon \
 		  -T$(LDSCRIPT) $(LIBDIR) $(LIBS) \
 		  -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
 

@@ -73,8 +73,9 @@ int main(void)
 	/* Initialize all configured peripherals */
 	MX_GPIO_Init();
 	MX_I2C1_Init();
-	ina226_init(&current_sensor, GND_GND_ADDRESS, 100.0f, 15.0f, AVG1, 
-				t1100US, t1100US, SHUNT_AND_BUS_CONT, 0x00);
+	ina226_reset(&current_sensor);
+	ina226_init(&current_sensor, GND_GND_ADDRESS, 0.1, 3.2f, AVG1, 
+				t1100US, t1100US, SHUNT_AND_BUS_CONT, DEFAULT);
 
 	/* USER CODE BEGIN 2 */
 
@@ -82,15 +83,17 @@ int main(void)
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
-	float32_t current, pwr, vbus;
-	_DEBUG("HELLO");
+	float32_t current, pwr, vbus, vshunt;
+	_DEBUG("Start measurements\n");
 	while (1)
 	{
+		HAL_Delay(1500);
 		ina226_get_vbus(&current_sensor, &vbus);
 		ina226_get_current(&current_sensor, &current);
+		ina226_get_vshunt(&current_sensor, &vshunt);
 		ina226_get_pwr(&current_sensor, &pwr);
-		_DEBUG("I: %.2f W: %.2f V: %.2f", current, pwr, vbus);
-		HAL_Delay(1000);
+		_DEBUG("I: %.3f P: %.3f V_shunt: %.3f V_bus: %.3f\n", current, pwr, 
+			   vshunt, vbus);
 	}
 	/* USER CODE END 3 */
 }

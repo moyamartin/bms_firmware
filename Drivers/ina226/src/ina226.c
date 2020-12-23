@@ -1,3 +1,4 @@
+#include "definitions.h"
 #include "ina226.h"
 
 /**
@@ -87,6 +88,7 @@ INA226_status ina226_init(INA226 * ina226, INA226_i2c_address address,
 {
 	INA226_config config_buffer;		
 	config_buffer.bits.AVG = avg;
+	config_buffer.bits.Reserved = 0b100;
 	config_buffer.bits.VBUSCT = vbusct;
 	config_buffer.bits.VSHCT = vshct;
 	config_buffer.bits.MODE = mode;
@@ -127,6 +129,8 @@ INA226_status ina226_init(INA226 * ina226, INA226_i2c_address address,
 			return CONFIG_ERROR;
 		}
 	}
+	uint16_t buffer;
+	ina226_readreg(ina226->address, INA226_CONFIG_REG, &buffer);
 	ina226->config = config_buffer;
 	ina226->current_active_mode = mode;
 
@@ -134,9 +138,10 @@ INA226_status ina226_init(INA226 * ina226, INA226_i2c_address address,
 			!= OK){
 		return CAL_ERROR;
 	}
+	ina226_readreg(ina226->address, INA226_CAL_REG, &buffer);
 
 	// set ina226 mask/enable register data
-	if(ina226_writereg(address, INA226_MASK_EN_REG, mask_enable) != 
+	if(ina226_writereg(ina226->address, INA226_MASK_EN_REG, mask_enable) != 
 			OK){
 		return MASK_EN_ERROR;
 	}
@@ -193,7 +198,8 @@ INA226_status ina226_get_pwr(INA226 * ina226, float32_t * pwr)
 	if(ina226_readreg(ina226->address, INA226_PWR_REG, &pwr_reg_val) != OK) {
 		return I2C_TRANSMISSION_ERROR;
 	}
-	*pwr= (float32_t) pwr_reg_val*ina226->current_LSB/1000;
+	// power_LSB = current_LSB*25
+	*pwr= (float32_t) pwr_reg_val*ina226->current_LSB*25;
 	return OK;
 }
 
@@ -232,12 +238,12 @@ INA226_status ina226_set_calibration(INA226 * ina226,
 	// Calculate new current_LSB
 	ina226->current_LSB = calculate_current_lsb(max_expected_current);
 	// Calculate calibration value
-	uint16_t cal_data_buffer = calculate_cal_val(r_shunt, 
-												 ina226->current_LSB);
+	uint16_t cal_data = calculate_cal_val(r_shunt, ina226->current_LSB);
+	swap_16b(&cal_data);
 	ina226->r_shunt = r_shunt;
 	ina226->max_expected_current = max_expected_current;
 	return ina226_writereg(ina226->address, INA226_CAL_REG, 
-						   cal_data_buffer);
+						   cal_data);
 }
 
 INA226_status ina226_set_mask_enable(INA226 * ina226,
