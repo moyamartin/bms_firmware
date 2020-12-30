@@ -12,8 +12,8 @@
  * @params[in] reg: register address to write to
  * @params[in] value: 16 bits value to write to register
  */
-static INA226_status ina226_writereg(INA226_i2c_address i2c_address,
-									 uint8_t reg, uint16_t value)
+static enum INA226_status ina226_writereg(enum INA226_i2c_addresses i2c_address,
+										  uint8_t reg, uint16_t value)
 {
 #if defined(USE_HAL_DRIVER) && defined(STM32F407xx)
 	if(HAL_I2C_Mem_Write(&INA226_INTERFACE, (uint16_t) i2c_address,
@@ -34,8 +34,8 @@ static INA226_status ina226_writereg(INA226_i2c_address i2c_address,
  * 		  function. As an example, we have only defined the functionalty for
  * 		  STM32F407xx
  */
-static INA226_status ina226_readreg(INA226_i2c_address i2c_address, 
-									uint8_t reg, uint16_t * value)
+static enum INA226_status ina226_readreg(enum INA226_i2c_addresses i2c_address, 
+										 uint8_t reg, uint16_t * value)
 { 
 #if defined(USE_HAL_DRIVER) && defined(STM32F407xx)
 	uint16_t rx_data;
@@ -81,12 +81,17 @@ static uint16_t calculate_cal_val(float32_t r_shunt,
 	return (uint16_t) ((0.00512)/(current_LSB*r_shunt));
 }
 
-INA226_status ina226_init(INA226 * ina226, INA226_i2c_address address,
-						  float32_t r_shunt, float32_t max_expected_current,	
-						  INA226_avg avg, INA226_ct vbusct, INA226_ct vshct, 
-						  INA226_mode mode, INA226_mask_enable mask_enable)
+enum INA226_status ina226_init(struct INA226 * ina226, 
+							   enum INA226_i2c_addresses address,
+							   float32_t r_shunt, 
+							   float32_t max_expected_current,	
+						  	   enum INA226_avg avg, 
+							   enum INA226_ct vbusct, 
+							   enum INA226_ct vshct, 
+						  	   enum INA226_mode mode, 
+							   enum INA226_mask_enable mask_enable)
 {
-	INA226_config config_buffer;		
+	union INA226_config config_buffer;		
 	config_buffer.bits.AVG = avg;
 	config_buffer.bits.Reserved = 0b100;
 	config_buffer.bits.VBUSCT = vbusct;
@@ -150,7 +155,7 @@ INA226_status ina226_init(INA226 * ina226, INA226_i2c_address address,
 }
 
 
-INA226_status ina226_reset(INA226 * ina226)
+enum INA226_status ina226_reset(struct INA226 * ina226)
 {
 	ina226->config.bits.RST = 1;
 	if(ina226_writereg(ina226->address, INA226_CONFIG_REG, 
@@ -160,7 +165,8 @@ INA226_status ina226_reset(INA226 * ina226)
 	return OK;
 }
 
-INA226_status ina226_get_current(INA226 * ina226, float32_t * current)
+enum INA226_status ina226_get_current(struct INA226 * ina226, 
+									  float32_t * current)
 {
 	uint16_t current_reg_val;
 	if(ina226_readreg(ina226->address, INA226_CURRENT_REG, 
@@ -171,7 +177,7 @@ INA226_status ina226_get_current(INA226 * ina226, float32_t * current)
 	return OK;
 }
 
-INA226_status ina226_get_vbus(INA226 * ina226, float32_t * vbus)
+enum INA226_status ina226_get_vbus(struct INA226 * ina226, float32_t * vbus)
 {
 	uint16_t vbus_reg_val;
 	if(ina226_readreg(ina226->address, INA226_VBUS_REG, &vbus_reg_val) != OK){
@@ -181,7 +187,7 @@ INA226_status ina226_get_vbus(INA226 * ina226, float32_t * vbus)
 	return OK;
 }
 
-INA226_status ina226_get_vshunt(INA226 * ina226, float32_t * vshunt)
+enum INA226_status ina226_get_vshunt(struct INA226 * ina226, float32_t * vshunt)
 {
 	uint16_t vshunt_reg_val;
 	if(ina226_readreg(ina226->address, INA226_VSHUNT_REG, 
@@ -192,7 +198,7 @@ INA226_status ina226_get_vshunt(INA226 * ina226, float32_t * vshunt)
 	return OK;
 }
 
-INA226_status ina226_get_pwr(INA226 * ina226, float32_t * pwr)
+enum INA226_status ina226_get_pwr(struct INA226 * ina226, float32_t * pwr)
 {
 	uint16_t pwr_reg_val;
 	if(ina226_readreg(ina226->address, INA226_PWR_REG, &pwr_reg_val) != OK) {
@@ -203,37 +209,39 @@ INA226_status ina226_get_pwr(INA226 * ina226, float32_t * pwr)
 	return OK;
 }
 
-INA226_status ina226_set_avg(INA226 * ina226, INA226_avg avg)
+enum INA226_status ina226_set_avg(struct INA226 * ina226, enum INA226_avg avg)
 {
 	ina226->config.bits.AVG = avg;	
 	return ina226_writereg(ina226->address, INA226_CONFIG_REG,
 						   ina226->config.buffer.all);
 }
 
-INA226_status ina226_set_vbus_ct(INA226 * ina226, INA226_ct ct)
+enum INA226_status ina226_set_vbus_ct(struct INA226 * ina226, enum INA226_ct ct)
 {
 	ina226->config.bits.VBUSCT = ct;
 	return ina226_writereg(ina226->address, INA226_CONFIG_REG,
 						   ina226->config.buffer.all);
 }
 
-INA226_status ina226_set_vshunt_ct(INA226 * ina226, INA226_ct ct)
+enum INA226_status ina226_set_vshunt_ct(struct INA226 * ina226, 
+										enum INA226_ct ct)
 {
 	ina226->config.bits.VSHCT = ct;
 	return ina226_writereg(ina226->address, INA226_CONFIG_REG,
 						   ina226->config.buffer.all);
 }
 
-INA226_status ina226_set_mode(INA226 * ina226, INA226_mode mode)
+enum INA226_status ina226_set_mode(struct INA226 * ina226, 
+								   enum INA226_mode mode)
 {
 	ina226->config.bits.MODE = mode;
 	return ina226_writereg(ina226->address, INA226_CONFIG_REG, 
 						   ina226->config.buffer.all);
 }
 
-INA226_status ina226_set_calibration(INA226 * ina226, 
-									 float32_t r_shunt,
-									 float32_t max_expected_current)
+enum INA226_status ina226_set_calibration(struct INA226 * ina226, 
+									 	  float32_t r_shunt,
+									 	  float32_t max_expected_current)
 {
 	// Calculate new current_LSB
 	ina226->current_LSB = calculate_current_lsb(max_expected_current);
@@ -246,15 +254,15 @@ INA226_status ina226_set_calibration(INA226 * ina226,
 						   cal_data);
 }
 
-INA226_status ina226_set_mask_enable(INA226 * ina226,
-									 INA226_mask_enable mask_enable)
+enum INA226_status ina226_set_mask_enable(struct INA226 * ina226,
+									 	  enum INA226_mask_enable mask_enable)
 {
 	ina226->mask_enable = mask_enable;
 	return ina226_writereg(ina226->address, INA226_MASK_EN_REG,
 						   mask_enable);
 }
 
-INA226_status ina226_clear_flags(INA226 * ina226)
+enum INA226_status ina226_clear_flags(struct INA226 * ina226)
 {
 	uint16_t buffer;
 	if(ina226_readreg(ina226->address, INA226_MASK_EN_REG, 

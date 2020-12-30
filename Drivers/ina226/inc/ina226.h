@@ -45,7 +45,7 @@
  * @brief defines several possible status of the ina226 driver to inform the
  * 		  user the current result of an operation
  */
-typedef enum {
+enum INA226_status {
 	OK = 0,
 	FAIL = -1,
 	MAN_ID_MISMATCH = -2,
@@ -55,26 +55,26 @@ typedef enum {
 	CAL_ERROR = -6,
 	MASK_EN_ERROR = -7,
 	FLAGS_NOT_CLEARED = -8,
-} INA226_status;
+};
 
-typedef struct {
+struct INA226_buff {
 	uint8_t reg_address;
-	buffer_16b buffer;
-} INA226_buff;
+	union buffer_16b buffer;
+};
 
 /**
  * @struct INA226
  * @brief This structure defines a HAL layer for the device data structure
  */
-typedef struct {
-	INA226_i2c_address address;
-	INA226_config config;	
-	INA226_mask_enable mask_enable;
-	INA226_mode current_active_mode;
+struct INA226 {
+	enum INA226_i2c_addresses address;
+	union INA226_config config;	
+	enum INA226_mask_enable mask_enable;
+	enum INA226_mode current_active_mode;
 	float32_t r_shunt;
 	float32_t max_expected_current;
 	float32_t current_LSB;
-} INA226;
+};
 
 
 /**
@@ -99,10 +99,13 @@ typedef struct {
  * @return INA226_status [OK|MAN_ID_MISMATCH|DIE_ID_MISMATCH|CONFIG_ERROR|
  * 						  CAL_ERROR|MASK_EN_ERROR]
  */
-INA226_status ina226_init(INA226 * ina226, INA226_i2c_address address,
-						  float32_t r_shunt, float32_t max_expected_current, 
-						  INA226_avg avg, INA226_ct vbusct, INA226_ct vshct,
-						  INA226_mode mode, INA226_mask_enable mask_enable);
+enum INA226_status ina226_init(struct INA226 * ina226, 
+		   					   enum INA226_i2c_addresses address,
+						  	   float32_t r_shunt, 
+							   float32_t max_expected_current, 
+						  	   enum INA226_avg avg, enum INA226_ct vbusct, 
+						  	   enum INA226_ct vshct, enum INA226_mode mode, 
+						  	   enum INA226_mask_enable mask_enable);
 
 /**
  * @func ina226_reset
@@ -111,7 +114,7 @@ INA226_status ina226_init(INA226 * ina226, INA226_i2c_address address,
  * @params[in] ina226: INA226 struct instance that will be reset
  * @returns [OK|CONFIG_ERROR]
  */
-INA226_status ina226_reset(INA226 * ina226);
+enum INA226_status ina226_reset(struct INA226 * ina226);
 
 /**
  * @func ina226_get_current
@@ -121,7 +124,8 @@ INA226_status ina226_reset(INA226 * ina226);
  * @returns INA226_status indicating if the operation was successful or not
  * 			[OK|I2C_TRANSMISSION_ERROR]
  */
-INA226_status ina226_get_current(INA226 * ina226, float32_t * current);
+enum INA226_status ina226_get_current(struct INA226 * ina226, 
+									  float32_t * current);
 
 /**
  * @func ina226_get_vbus
@@ -131,7 +135,7 @@ INA226_status ina226_get_current(INA226 * ina226, float32_t * current);
  * @returns INA226_status indicating if the operation was successful or not
  * 			[OK|I2C_TRANSMISSION_ERROR]
  */
-INA226_status ina226_get_vbus(INA226 * ina226, float32_t * vbus);
+enum INA226_status ina226_get_vbus(struct INA226 * ina226, float32_t * vbus);
 
 /**
  * @func ina226_get_vbus
@@ -141,7 +145,8 @@ INA226_status ina226_get_vbus(INA226 * ina226, float32_t * vbus);
  * @returns INA226_status indicating if the operation was successful or not
  * 			[OK|I2C_TRANSMISSION_ERROR]
  */
-INA226_status ina226_get_vshunt(INA226 * ina226, float32_t * vshunt);
+enum INA226_status ina226_get_vshunt(struct INA226 * ina226, 
+									 float32_t * vshunt);
 
 /**
  * @func ina226_get_pwr
@@ -151,7 +156,7 @@ INA226_status ina226_get_vshunt(INA226 * ina226, float32_t * vshunt);
  * @returns INA226_status indicating if the operation was successful or not
  * 			[OK|I2C_TRANSMISSION_ERROR]
  */
-INA226_status ina226_get_pwr(INA226 * ina226, float32_t * pwr);
+enum INA226_status ina226_get_pwr(struct INA226 * ina226, float32_t * pwr);
 
 /**
  * @func ina226_set_avg
@@ -163,7 +168,8 @@ INA226_status ina226_get_pwr(INA226 * ina226, float32_t * pwr);
  * @returns INA226_status indicating if the operation was successful or not
  * 			[OK|I2C_TRANSMISSION_ERROR]
  */
-INA226_status ina226_set_avg(INA226 * ina226_instance, INA226_avg avg);
+enum INA226_status ina226_set_avg(struct INA226 * ina226, 
+								  enum INA226_avg avg);
 
 /**
  * @func ina226_set_vbus_ct
@@ -174,7 +180,8 @@ INA226_status ina226_set_avg(INA226 * ina226_instance, INA226_avg avg);
  * 			   conversion time
  * @returns ina226_state [OK|I2C_TRANSMISSION_ERROR]
  */
-INA226_status ina226_set_vbus_ct(INA226 * ina226_instance, INA226_ct ct);
+enum INA226_status ina226_set_vbus_ct(struct INA226 * ina226_instance, 
+									  enum INA226_ct ct);
 
 /**
  * @func ina226_set_vshunt_ct
@@ -185,7 +192,8 @@ INA226_status ina226_set_vbus_ct(INA226 * ina226_instance, INA226_ct ct);
  * 			   conversion time
  * @returns ina226_state [OK|I2C_TRANSMISSION_ERROR]
  */
-INA226_status ina226_set_vshunt_ct(INA226 * ina226_instance, INA226_ct ct);
+enum INA226_status ina226_set_vshunt_ct(struct INA226 * ina226_instance, 
+								  		 enum INA226_ct ct);
 
 /**
  * @func  ina226_set_mode
@@ -194,7 +202,8 @@ INA226_status ina226_set_vshunt_ct(INA226 * ina226_instance, INA226_ct ct);
  * @params[in] mode: Operation mode modeled by the INA226_mode enum typedef
  * @return 	   INA226_status enum [OK|I2C_TRANSMISSION_ERROR]
  */
-INA226_status ina226_set_mode(INA226 * ina226, INA226_mode mode);
+enum INA226_status ina226_set_mode(struct INA226 * ina226, 
+								   enum INA226_mode mode);
 
 /**
  * @func  ina226_set_calibration
@@ -209,7 +218,7 @@ INA226_status ina226_set_mode(INA226 * ina226, INA226_mode mode);
  *			   expected current that the sensur will measure
  * @returns INA226_status [OK | I2C_TRANSMISSION_ERROR]
  */
-INA226_status ina226_set_calibration(INA226 * ina226, 
+enum INA226_status ina226_set_calibration(struct INA226 * ina226, 
 									 float32_t r_shunt, 
 									 float32_t max_expected_current);
 
@@ -226,7 +235,7 @@ INA226_status ina226_set_calibration(INA226 * ina226,
  *			   expected current that the sensur will measure
  * @returns INA226_status [OK | I2C_TRANSMISSION_ERROR]
  */
-INA226_status ina226_set_mask_enable(INA226 * ina226, 
-									 INA226_mask_enable maks_enable);
+enum INA226_status ina226_set_mask_enable(struct INA226 * ina226, 
+									 	  enum INA226_mask_enable maks_enable);
 
 #endif /* ina226.h */

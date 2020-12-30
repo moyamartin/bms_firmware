@@ -100,14 +100,14 @@
 #define INA226_VSHUNT_LSB_VAL	0.0000025f
 
 /**
- * @enum _INA226_i2c_address
+ * @enum _INA226_i2c_addresses
  * @brief Enum class that represent the available I2C addresses for the ina226, 
  * 		  these addresses depend on how pins A1 and A2 are connected. 
  * 		  The user has to take care when connecting multiple current sensor to 
  * 		  not overlap i2c addresses as there is no pool address manager 
  * 		  implemented from the driver side
  */
-typedef enum {
+enum INA226_i2c_addresses {
 	GND_GND_ADDRESS = 0x80, /**< A1=GND, A0=GND */
 	GND_VS_ADDRESS = 0x82,	/**< A1=GND, A0=VS */
 	GND_SDA_ADDRESS = 0x84, /**< A1=GND, A0=SDA */
@@ -124,37 +124,37 @@ typedef enum {
 	SCL_VS_ADDRESS = 0x9A,	/**< A1=SCL, A0=VS */
 	SCL_SDA_ADDRESS = 0x9C, /**< A1=SCL, A0=SDA */
 	SCL_SCL_ADDRESS = 0x9E	/**< A1=SCL, A0=SCL */ 
-} INA226_i2c_address;
+};
 
 
 /**
- * @struct _INA226_config_bits
+ * @struct INA226_config_bits
  * @brief A structure to represent the bits of the Configuration register
  */
-typedef struct {
+struct INA226_config_bits {
 	uint16_t MODE:3;		/**< Operating Mode */
 	uint16_t VSHCT:3;		/**< Shunt Voltage conversion time */ 
 	uint16_t VBUSCT:3;		/**< Bus voltage conversion time */
 	uint16_t AVG:3;			/**< Averaging Mode see datasht for combinations */
 	uint16_t Reserved:3; 	/**< Reserved bits */
 	uint16_t RST:1;		 	/**< Reset bit. Set to '1' generates system rst */
-} INA226_config_bits;
+};
 
 /**
  * @union INA226_config
- * @brief A union representing the Configuration register data, this allows us to
- * 		  handle the data structure in different ways
+ * @brief A union representing the Configuration register data, this allows us 
+ * 		  to handle the data structure in different ways
  */
-typedef union {
-	INA226_config_bits bits;
-	buffer_16b buffer;
-} INA226_config;
+union INA226_config {
+	struct INA226_config_bits bits;
+	union buffer_16b buffer;
+};
 
 /**
  * @enum INA226_avg that represents the different combinations for AVG bit 
  * settings
  */
-typedef enum {
+enum INA226_avg{
 	AVG1	= 0b000, /**< 1 Sample avg */
 	AVG4	= 0b001, /**< 4 Samples avg */
 	AVG16	= 0b010, /**< 16 Samples avg */
@@ -163,13 +163,14 @@ typedef enum {
 	AVG256	= 0b101, /**< 256 Samples avg */
 	AVG512	= 0b110, /**< 512 Samples avg */
 	AVG1024	= 0b111, /**< 1024 Samples avg */ 
-} INA226_avg;
+} ;
 
 /**
- * @enum INA226_ct that represents the different combinations for conversion 
- * time settings
+ * @enum INA226_ct 
+ * @brief enum that represents the different combinations for conversion 
+ * 		  time settings
  */
-typedef enum {
+enum INA226_ct {
 	t140US  = 0b000, /**< 140uS conversion time */
 	t204US  = 0b001, /**< 204uS conversion time */
 	t332US  = 0b010, /**< 332uS conversion time */
@@ -178,13 +179,14 @@ typedef enum {
 	t2116US = 0b101, /**< 2116uS conversion time */
 	t4156US = 0b110, /**< 4156uS conversion time */
 	t8244US = 0b111, /**< 8244uS conversion time */
-} INA226_ct;
+};
 
 /**
- * @enum INA226_mode that represents the different combinations for operating 
- * mode settings
+ * @enum INA226_mode 
+ * @brief enum that represents the different combinations for operating 
+ * 		  mode settings
  */
-typedef enum {
+enum INA226_mode {
 	POWER_DOWN 			= 0b000 | 0b100, /**< power down */
 	SHUNT_VOLTAGE_TRIG 	= 0b001, 		 /**< shunt triggered */
 	BUS_VOLTAGE_TRIG	= 0b010, 		 /**< bus triggered */
@@ -193,7 +195,7 @@ typedef enum {
 	BUS_VOLTAGE_CONT	= 0b110,		 /**< bus continuous */
 	SHUNT_AND_BUS_CONT 	= 0b111,		 /**< Shunt and bus continuous (def) */
 
-} INA226_mode;
+};
 
 /**
  * @enum INA226_mask_enable
@@ -204,7 +206,7 @@ typedef enum {
  * 		  position Alert Function takes priority and responds to the Alert 
  * 		  Limit Trigger
  */
-typedef enum {
+enum INA226_mask_enable {
 	SOL  =	0x8000,
 	SUL  =	0x4000,
 	BOL  =	0x2000,
@@ -216,17 +218,17 @@ typedef enum {
 	APOL =	0x0002,
 	LEN  =	0x0001,
 	DEFAULT = 0x0000,
-} INA226_mask_enable;
+};
 
 /**
  * @union INA226_config
  * @brief A union representing the Configuration register data, this allows us to
  * 		  handle the data structure in different ways
  */
-typedef union {
-	INA226_mask_enable bits;
-	buffer_16b buffer;
-} INA226_mask_enable_buffer;
+union INA226_mask_enable_buffer{
+	enum INA226_mask_enable bits;
+	union buffer_16b buffer;
+};
 
 
 #endif /* ina226_defs.h */
