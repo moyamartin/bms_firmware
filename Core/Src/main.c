@@ -25,7 +25,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 I2C_HandleTypeDef hi2c1;
-INA226 current_sensor;
+struct INA226 current_sensor;
 
 /* USER CODE BEGIN PV */
 

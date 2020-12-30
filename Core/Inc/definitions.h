@@ -29,13 +29,13 @@
  * @brief Union representing a buffer of 16 bits, that allows you to access to
  * 		  the low and high 8 bits of a uint16_t 
  */
-typedef union { 
+union buffer_16b { 
 	uint16_t all;
 	struct {
 		uint8_t b_low;
 		uint8_t b_high;
 	} separation;
-} buffer_16b;
+};
 
 
 /**
