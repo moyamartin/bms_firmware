@@ -267,10 +267,375 @@
 #define IO_CONFIG_REG			(0x41)
 
 /** 
- * BQ76PL536A I/O Pin Configuration address 
+ * BQ76PL536A COV Configuration address 
  *	Default value: 0b00000000 0x00
  *	Type: R/W - GROUP 3
  */
-#define FUNCTION_CONFIG_REG		(0x41)
+#define CONFIG_COV_REG			(0x42)
+
+/** 
+ * BQ76PL536A COVT Config Configuration address 
+ *	Default value: 0b00000000 0x00
+ *	Type: R/W - GROUP 3
+ */
+#define CONFIG_COVT_REG			(0x43)
+
+/** 
+ * BQ76PL536A CUV Config Configuration address 
+ *	Default value: 0b00000000 0x00
+ *	Type: R/W - GROUP 3
+ */
+#define CONFIG_CUV_REG			(0x44)
+
+/** 
+ * BQ76PL536A CUVT Config Configuration address 
+ *	Default value: 0b00000000 0x00
+ *	Type: R/W - GROUP 3
+ */
+#define CONFIG_CUVT_REG			(0x45)
+
+/** 
+ * BQ76PL536A OT Config Configuration address 
+ *	Default value: 0b00000000 0x00
+ *	Type: R/W - GROUP 3
+ */
+#define CONFIG_OT_REG			(0x45)
+
+/** 
+ * BQ76PL536A OTT Config Configuration address 
+ *	Default value: 0b00000000 0x00
+ *	Type: R/W - GROUP 3
+ */
+#define CONFIG_OTT_REG			(0x46)
+
+/** 
+ * BQ76PL536A USER1 Register address 
+ *	Default value: 0b00000000 0x00
+ *	Type: R/W - GROUP 3
+ */
+#define USER1_REG				(0x48)
+
+/** 
+ * BQ76PL536A USER2 Register address 
+ *	Default value: 0b00000000 0x00
+ *	Type: R/W - GROUP 3
+ */
+#define USER2_REG				(0x49)
+
+/** 
+ * BQ76PL536A USER3 Register address 
+ *	Default value: 0b00000000 0x00
+ *	Type: R/W - GROUP 3
+ */
+#define USER3_REG				(0x4A)
+
+/** 
+ * BQ76PL536A USER4 Register address 
+ *	Default value: 0b00000000 0x00
+ *	Type: R/W - GROUP 3
+ */
+#define USER4_REG				(0x4B)
+
+/**
+ * BQ76PL536A Write this value to SHDW_CTRL (0x3A) to enable writing Group 3
+ * registers
+ */
+#define ENABLE_REG_3			(0x35)
+
+/**
+ * BQ76PL536A Write this value to RESET (0x3A) to reset the device 
+ * registers
+ */
+#define RESET_DEVICE_VALUE		(0xA5)
+
+/**
+ * BQ76PL536A Write this value to E_EN (0x3F) to access the programming of the
+ * integraed OTP EEPROM
+ */
+#define RESET_DEVICE_VALUE		(0xA5)
+
+
+
+
+/**
+ * @struct BQ76_device_status
+ * @brief struct that represents the device status register data
+ */
+struct BQ76_device_status{
+	uint8_t DRDY:1;		/**< Indicates that the data is ready to read*/
+	uint8_t CBT:1;		/**< Indicates the cell balance timer is running */	
+	uint8_t UVLO:1;		/**< Indicates that VBAT has fallen below UVT */
+	uint8_t ECC_COR:1;	/**< Indicates that a bit error has been detected */
+	uint8_t RESERVED:1; /**< Reserved */
+	uint8_t ALERT:1;	/**< ALERT assert raised */
+	uint8_t FAULT:1;	/**< FAULT asser raised */
+	uint8_t ADDR_RQST:1;/**< Address writter to the correct address*/
+};
+
+/**
+ * @struct BQ76_alert_status
+ * @brief struct that represents the alert status register data
+ */
+struct BQ76_alert_status{
+	uint8_t OT1:1;		/**< Indicates overtemperature on temp. sensor 1 */
+	uint8_t OT2:1;		/**< Indicates overtemperature on temp. sensor 2 */	
+	uint8_t SLEEP:1;	/**< Indicates that SLEEP mode has been activated */
+	uint8_t TSD:1;		/**< Indicates thermal shutdown is active */
+	uint8_t FORCE:1; 	/**< Asserts the ALERT signal */
+	uint8_t ECC_ERR:1;	/**< Indicates validation of OTP regs */
+	uint8_t PARITY:1;	/**< Indicates validation of group3 regs */
+	uint8_t AR:1;		/**< Indicates that the address is valid */
+};
+
+/**
+ * @struct BQ76_fault_register
+ * @brief struct that represents the fault status register data
+ */
+struct BQ76_fault_status{
+	uint8_t COV:1;		/**< Indicates COV detection */
+	uint8_t CUV:1;		/**< Indicates CUV detection */	
+	uint8_t CRC:1;		/**< Indicates garbled packet reception */
+	uint8_t POR:1;		/**< Indicates power-on reset */
+	uint8_t FORCE:1; 	/**< Indicates the FAULT signal */
+	uint8_t I_FAULT:1;	/**< Indicates internal reg failure check*/
+	uint8_t RESERVED:2;	/**< Reserved */
+};
+
+/**
+ * @struct BQ76_cov_fault_register
+ * @brief struct that represents the cov fault status register data
+ */
+struct BQ76_cov_fault{
+	uint8_t OV1:1;		/**< Indicates cell 1 fault */
+	uint8_t OV2:1;		/**< Indicates cell 2 fault */
+	uint8_t OV3:1; 		/**< Indicates cell 3 fault */
+	uint8_t OV4:1;		/**< Indicates cell 4 fault */
+	uint8_t OV5:1;		/**< Indicates cell 5 fault */
+	uint8_t OV6:1;		/**< Indicates cell 6 fault */	
+	uint8_t RESERVED:2;	/**< Reserved */
+};
+
+/**
+ * @struct BQ76_cuv_fault_register
+ * @brief struct that represents the cuv fault status register data
+ */
+struct BQ76_cuv_fault{
+	uint8_t UV1:1;		/**< Indicates cell 1 fault */
+	uint8_t UV2:1;		/**< Indicates cell 2 fault */
+	uint8_t UV3:1; 		/**< Indicates cell 3 fault */
+	uint8_t UV4:1;		/**< Indicates cell 4 fault */
+	uint8_t UV5:1;		/**< Indicates cell 5 fault */
+	uint8_t UV6:1;		/**< Indicates cell 6 fault */	
+	uint8_t RESERVED:2;	/**< Reserved */
+};
+
+/**
+ * @struct BQ76_presult_a
+ * @brief struct that represents the PARITY_H (PRESULT_A (R/O)) register data
+ */
+struct BQ76_presult_a{
+	uint8_t FUNC:1;		/**< Function mode */
+	uint8_t IO:1;		/**< I/O mode */
+	uint8_t COVV:1;		/**< Overvoltage value */
+	uint8_t COVT:1; 	/**< Overvoltage time */
+	uint8_t CUVV:1;		/**< Undervoltage value */
+	uint8_t CUVT:1;		/**< Undervoltage time */
+	uint8_t OTV:1;		/**< Overtemp value */	
+	uint8_t OTT:1;		/**< Overtemp time */
+};
+
+/**
+ * @struct BQ76_presult_b
+ * @brief struct that represents the PARITY_H (PRESULT_B (R/O)) register data
+ */
+struct BQ76_presult_b {
+	uint8_t USER1:1;	/**< USER1 */
+	uint8_t USER2:1;	/**< USER2 */
+	uint8_t USER3:1;	/**< USER3 */
+	uint8_t USER4:1;	/**< USER4 */
+	uint8_t RESERVED:4;	/**< Reserved */
+};
+
+/**
+ * @struct BQ76_adc_control
+ * @brief struct that represents adc control register data
+ */
+struct BQ76_adc_control{
+	uint8_t CELL_SEL:3;	/**< Selects the series cells for voltage measurement */
+	uint8_t GPAI:1;		/**< Enables/Disables GPAI input to be measured */
+	uint8_t TS:2;		/**< Selects temp sensor input to be meeasured */
+	uint8_t ADC_ON:1;	/**< forces ADC subsystem ON */
+	uint8_t RESERVED:1;	/**< Reserved */
+};
+
+/**
+ * @enum BQ76_temp_sensor_inputs
+ * @brief Represents the possible values for sensor inputs, this is related to
+ * 		  bit field TS on BQ76_adc_control 
+ * @see BQ76_presult_b
+ */
+enum BQ76_temp_sensor_inputs{
+	NONE = 0b00,
+	TS1 = 0b01,
+	TS2 = 0b10,
+	BOTH = 0b11,
+};
+
+/**
+ * @enum BQ76_bat_series_inputs
+ * @brief Represents the possible values for cell series measurements, this is
+ * related to bit fields CELL_SEL on BQ76_adc_control
+ * @see BQ76_adc_control
+ */
+enum BQ76_temp_sensor_inputs{
+	CELL_1 = 0b000,
+	CELL_1_2 = 0b001,
+	CELL_1_3 = 0b010,
+	CELL_1_4 = 0b011,
+	CELL_1_5 = 0b100,
+	CELL_1_6 = 0b101,
+};
+
+/**
+ * @struct BQ76_io_control
+ * @brief struct that represents I/O control register data
+ */
+struct BQ76_io_control {
+	uint8_t TS1:1;		/**< Controls the connection to TS2 */
+	uint8_t TS2:2;		/**< Controls the connection to TS2 */
+	uint8_t SLEEP:1;	/**< Place the device in sleep mode */
+	uint8_t RESERVED:2;	/**< Reserved */
+	uint8_t GPIO_IN:1;	/**< Represents the input state of GPIO pin */
+	uint8_t GPIO_OUT:1;	/**< Represents the output state of GPIO pin */
+	uint8_t AUX:1;		/**< Controls the state of the AUX pin */
+};
+
+
+/**
+ * @struct BQ76_io_control
+ * @brief struct that represents I/O control register data
+ */
+struct BQ76_io_control 
+{
+	uint8_t TS1:1;		/**< Controls the connection to TS2 */
+	uint8_t TS2:2;		/**< Controls the connection to TS2 */
+	uint8_t SLEEP:1;	/**< Place the device in sleep mode */
+	uint8_t RESERVED:2;	/**< Reserved */
+	uint8_t GPIO_IN:1;	/**< Represents the input state of GPIO pin */
+	uint8_t GPIO_OUT:1;	/**< Represents the output state of GPIO pin */
+	uint8_t AUX:1;		/**< Controls the state of the AUX pin */
+};
+
+/**
+ * @struct BQ76_cb_ctrl
+ * @brief struct that represents the cell balance output state control register
+ */
+struct BQ76_cb_ctrl { 
+	uint8_t CBAL:6;		/**< Determines if the CB(n) output is high or low */
+	uint8_t RESERVED:2; /**< Reserved */
+};
+
+/**
+ * @struct BQ76_cb_time
+ * @brief struct that represents the cell balance time register
+ */
+struct BQ76_cb_time { 
+	uint8_t CBT:6;		/**< Determines if the CB(n) output is high or low */
+	uint8_t RESERVED:2; /**< Reserved */
+	uint8_t CBCT:1;		/**< Controls minutes/seconds counting resolution */
+};
+
+/**
+ * @struct BQ76_adc_convert
+ * @brief struct that represents the ADC convert register data
+ */
+struct BQ76_adc_convert { 
+	uint8_t CONV:1;		/**< This bit starts a conversion */
+	uint8_t RESERVED:7; /**< Reserved */
+	uint8_t CBCT:1;		/**< Controls minutes/seconds counting resolution */
+};
+
+/**
+ * @struct BQ76_address_ctrl
+ * @brief struct that represents the address control register data
+ */
+struct BQ76_address_control { 
+	uint8_t ADDR_RQST:1;
+	uint8_t RESERVED:1;
+	uint8_t ADDR:6;		/**< sets the address for SPI comm */
+};
+
+/**
+ * @struct BQ76_function_config
+ * @brief struct that represents the function config register data
+ */
+struct BQ76_function_config { 
+	uint8_t RESERVED:2;
+	uint8_t CN:2;			/**< Configures the number of series cells used */
+	uint8_t GPAI_SRC:1;		/**< Multiplex GPAI SRC to VBAT or output */
+	uint8_t GPAI_REF:1;		/**< Sets GPAI ADC reference */
+	uint8_t RESERVED:2;
+};
+
+/**
+ * @enum BQ76_series_cells
+ * @brief possible values for BQ76_function_config.CN
+ */
+enum BQ76_series_cells {
+	CELLS_6 = 0b00,
+	CELLS_5 = 0b01,
+	CELLS_4 = 0b10,
+	CELLS_3 = 0b11,
+};
+
+/**
+ * @struct BQ76_io_config
+ * @brief struct that represents the io config register data
+ */
+struct BQ76_io_config { 
+	uint8_t CRC_DIS:1;	/**< Enable/Disable the CRC generation */
+	uint8_t RESERVED:6;	/**< RESERVED */		
+	uint8_t CRCNOFLT:1;	/**< Enable/Disable detected CRC errors */
+};
+
+/**
+ * @struct BQ76_config_cov
+ * @brief struct that represents the cov config register data
+ */
+struct BQ76_cov_config { 
+	uint8_t COV:6;		/**< Overvoltage voltage threshold */
+	uint8_t RESERVED:1;	/**< RESERVED */		
+	uint8_t DISABLE:1;	/**< Enable/Disable the OVT function */
+};
+
+/**
+ * @struct BQ76_config_covt
+ * @brief struct that represents the covt config register data
+ */
+struct BQ76_covt_config { 
+	uint8_t COVD:5;		/**< Overvoltage detection delay time */
+	uint8_t RESERVED:2;	/**< RESERVED */		
+	uint8_t US_MS:1;	/**< Sets uS/mS */
+};
+
+/**
+ * @struct BQ76_config_cuv
+ * @brief struct that represents the cuv config register data
+ */
+struct BQ76_cuv_config { 
+	uint8_t CUV:5;		/**< Undervoltage threshold */
+	uint8_t RESERVED:2;	/**< RESERVED */		
+	uint8_t DISABLE:1;	/**< Enable/Disable the OVT function */
+};
+
+/**
+ * @struct BQ76_config_cuvt
+ * @brief struct that represents the cuvt config register data
+ */
+struct BQ76_cuvt_config { 
+	uint8_t CUVD:5;		/**< Undervoltage detection delay time */
+	uint8_t RESERVED:2;	/**< RESERVED */		
+	uint8_t US_MS:1;	/**< Sets uS/mS */
+};
 
 #endif /* bq76pl536a_defs.h */
