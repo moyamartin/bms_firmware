@@ -20,9 +20,24 @@
 	// AVR devices support
 #endif
 
+#define RX_BUFFER_SIZE	12
+
 enum BQ76_Status {
 	OK = 0,
 };
+
+struct BQ76_write_packet_format {
+	uint8_t device_address;
+	uint8_t reg_address;
+	uint8_t reg_data;
+}
+
+struct BQ76_read_packet_format {
+	uint8_t device_address;
+	uint8_t start_reg_address;
+	uint8_t read_length;
+	uint8_t read_data[12];
+}
 
 struct BQ76 {
 	struct device_status;
@@ -48,28 +63,3 @@ struct BQ76 {
 	struct BQ76 * south;
 	struct BQ76 * north;
 };
-
-/**
- * @func BQ76_writereg
- * @brief Write a register of the BQ76PL536 device.
- * 		  The user of this library is responsible of defining this function. As
- * 		  an example, we have only defined functionality for STM32F407xx
- * @params[in] spi_address: BQ76 device address
- * @params[in] reg: register address to write
- * @params[in] value: value to write
- * @return BQ76_status
- */
-static enum BQ76_status BQ76_writereg(uint8_t spi_address, uint8_t reg_address, 
-									  uint8_t value)
-{
-}
-
-static enum BQ76_status BQ76_readreg(uint8_t spi_address, uint8_t reg_address,
-									 uint8_t * value)
-{
-
-}
-
-static enum BQ76_status BQ76_init(struct BQ76 * device)
-{
-}
