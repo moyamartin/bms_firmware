@@ -16,14 +16,17 @@
 	 */
 	extern I2C_HandleTypeDef 	hspi1;
 	#define BQ76_INTERFACE hspi1 
+	#define BQ76_TIMEOUT 1000
+	#define BQ76_TX_BUFF_SIZE sizeof(BQ76_write_packet_format)
+	#define BQ76_RX_BUFF_SIZE 12
+	#define BQ76_RX_BUFF_LENGTH(length) (sizeof(BQ76_write_packet_format) + length)
 #elif defined (__AVR__)
 	// AVR devices support
 #endif
 
-#define RX_BUFFER_SIZE	12
-
 enum BQ76_Status {
 	OK = 0,
+	SPI_TRANSMISSION_ERROR = -1,
 };
 
 struct BQ76_write_packet_format {
@@ -36,7 +39,6 @@ struct BQ76_read_packet_format {
 	uint8_t device_address;
 	uint8_t start_reg_address;
 	uint8_t read_length;
-	uint8_t read_data[12];
 }
 
 struct BQ76 {
