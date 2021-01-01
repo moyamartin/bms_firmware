@@ -2,7 +2,7 @@
 #include "ina226.h"
 
 /**
- * @fn	  ina226_writereg
+ * @fn	  writereg
  * @brief Write a register of TIs INA226 device.
  * 		  The user of this library is responsible of defining this 
  * 		  function. As an example, we have only defined the functionalty for
@@ -12,7 +12,7 @@
  * @params[in] reg: register address to write to
  * @params[in] value: 16 bits value to write to register
  */
-static enum INA226_status ina226_writereg(enum INA226_i2c_addresses i2c_address,
+static enum INA226_status writereg(enum INA226_i2c_addresses i2c_address,
 										  uint8_t reg, uint16_t value)
 {
 #if defined(USE_HAL_DRIVER) && defined(STM32F407xx)
@@ -28,13 +28,13 @@ static enum INA226_status ina226_writereg(enum INA226_i2c_addresses i2c_address,
 }
 
 /**
- * @fn	  ina226_readreg
+ * @fn	  readreg
  * @brief Read a register of TIs INA226 device.
  * 		  The user of this library is responsible of defining this 
  * 		  function. As an example, we have only defined the functionalty for
  * 		  STM32F407xx
  */
-static enum INA226_status ina226_readreg(enum INA226_i2c_addresses i2c_address, 
+static enum INA226_status readreg(enum INA226_i2c_addresses i2c_address, 
 										 uint8_t reg, uint16_t * value)
 { 
 #if defined(USE_HAL_DRIVER) && defined(STM32F407xx)
@@ -103,7 +103,7 @@ enum INA226_status ina226_init(struct INA226 * ina226,
 	 * chip
 	 */
 	uint16_t man_id_val;
-	if(ina226_readreg(address, INA226_MAN_ID_REG, &man_id_val) != OK){
+	if(readreg(address, INA226_MAN_ID_REG, &man_id_val) != OK){
 		return I2C_TRANSMISSION_ERROR;
 	}
 
@@ -111,7 +111,7 @@ enum INA226_status ina226_init(struct INA226 * ina226,
 		return MAN_ID_MISMATCH;
 	}
 	uint16_t die_id_val;
-	if(ina226_readreg(address, INA226_DIE_ID_REG, &die_id_val) != OK){
+	if(readreg(address, INA226_DIE_ID_REG, &die_id_val) != OK){
 		return I2C_TRANSMISSION_ERROR;
 	}
 	if(die_id_val != INA226_DIE_ID_VAL){
@@ -128,14 +128,14 @@ enum INA226_status ina226_init(struct INA226 * ina226,
 	// set ina226 configuration register if, and only if, the initialization
 	// configuration is different from the default values
 	if(config_buffer.buffer.all != INA226_CONFIG_DEFAULT){
-		if(ina226_writereg(ina226->address, INA226_CONFIG_REG, 
+		if(writereg(ina226->address, INA226_CONFIG_REG, 
 						   config_buffer.buffer.all) != 
 				OK){
 			return CONFIG_ERROR;
 		}
 	}
 	uint16_t buffer;
-	ina226_readreg(ina226->address, INA226_CONFIG_REG, &buffer);
+	readreg(ina226->address, INA226_CONFIG_REG, &buffer);
 	ina226->config = config_buffer;
 	ina226->current_active_mode = mode;
 
@@ -143,10 +143,10 @@ enum INA226_status ina226_init(struct INA226 * ina226,
 			!= OK){
 		return CAL_ERROR;
 	}
-	ina226_readreg(ina226->address, INA226_CAL_REG, &buffer);
+	readreg(ina226->address, INA226_CAL_REG, &buffer);
 
 	// set ina226 mask/enable register data
-	if(ina226_writereg(ina226->address, INA226_MASK_EN_REG, mask_enable) != 
+	if(writereg(ina226->address, INA226_MASK_EN_REG, mask_enable) != 
 			OK){
 		return MASK_EN_ERROR;
 	}
@@ -158,7 +158,7 @@ enum INA226_status ina226_init(struct INA226 * ina226,
 enum INA226_status ina226_reset(struct INA226 * ina226)
 {
 	ina226->config.bits.RST = 1;
-	if(ina226_writereg(ina226->address, INA226_CONFIG_REG, 
+	if(writereg(ina226->address, INA226_CONFIG_REG, 
 					   ina226->config.buffer.all) != OK){
 		return CONFIG_ERROR;
 	}
@@ -169,7 +169,7 @@ enum INA226_status ina226_get_current(struct INA226 * ina226,
 									  float32_t * current)
 {
 	uint16_t current_reg_val;
-	if(ina226_readreg(ina226->address, INA226_CURRENT_REG, 
+	if(readreg(ina226->address, INA226_CURRENT_REG, 
 					  &current_reg_val) != OK){
 		return I2C_TRANSMISSION_ERROR;
 	}
@@ -180,7 +180,7 @@ enum INA226_status ina226_get_current(struct INA226 * ina226,
 enum INA226_status ina226_get_vbus(struct INA226 * ina226, float32_t * vbus)
 {
 	uint16_t vbus_reg_val;
-	if(ina226_readreg(ina226->address, INA226_VBUS_REG, &vbus_reg_val) != OK){
+	if(readreg(ina226->address, INA226_VBUS_REG, &vbus_reg_val) != OK){
 		return I2C_TRANSMISSION_ERROR;
 	}
 	*vbus = (float32_t) vbus_reg_val*INA226_VBUS_LSB_VAL;
@@ -190,7 +190,7 @@ enum INA226_status ina226_get_vbus(struct INA226 * ina226, float32_t * vbus)
 enum INA226_status ina226_get_vshunt(struct INA226 * ina226, float32_t * vshunt)
 {
 	uint16_t vshunt_reg_val;
-	if(ina226_readreg(ina226->address, INA226_VSHUNT_REG, 
+	if(readreg(ina226->address, INA226_VSHUNT_REG, 
 					  &vshunt_reg_val) != OK){
 		return I2C_TRANSMISSION_ERROR;
 	}
@@ -201,7 +201,7 @@ enum INA226_status ina226_get_vshunt(struct INA226 * ina226, float32_t * vshunt)
 enum INA226_status ina226_get_pwr(struct INA226 * ina226, float32_t * pwr)
 {
 	uint16_t pwr_reg_val;
-	if(ina226_readreg(ina226->address, INA226_PWR_REG, &pwr_reg_val) != OK) {
+	if(readreg(ina226->address, INA226_PWR_REG, &pwr_reg_val) != OK) {
 		return I2C_TRANSMISSION_ERROR;
 	}
 	// power_LSB = current_LSB*25
@@ -212,14 +212,14 @@ enum INA226_status ina226_get_pwr(struct INA226 * ina226, float32_t * pwr)
 enum INA226_status ina226_set_avg(struct INA226 * ina226, enum INA226_avg avg)
 {
 	ina226->config.bits.AVG = avg;	
-	return ina226_writereg(ina226->address, INA226_CONFIG_REG,
+	return writereg(ina226->address, INA226_CONFIG_REG,
 						   ina226->config.buffer.all);
 }
 
 enum INA226_status ina226_set_vbus_ct(struct INA226 * ina226, enum INA226_ct ct)
 {
 	ina226->config.bits.VBUSCT = ct;
-	return ina226_writereg(ina226->address, INA226_CONFIG_REG,
+	return writereg(ina226->address, INA226_CONFIG_REG,
 						   ina226->config.buffer.all);
 }
 
@@ -227,7 +227,7 @@ enum INA226_status ina226_set_vshunt_ct(struct INA226 * ina226,
 										enum INA226_ct ct)
 {
 	ina226->config.bits.VSHCT = ct;
-	return ina226_writereg(ina226->address, INA226_CONFIG_REG,
+	return writereg(ina226->address, INA226_CONFIG_REG,
 						   ina226->config.buffer.all);
 }
 
@@ -235,7 +235,7 @@ enum INA226_status ina226_set_mode(struct INA226 * ina226,
 								   enum INA226_mode mode)
 {
 	ina226->config.bits.MODE = mode;
-	return ina226_writereg(ina226->address, INA226_CONFIG_REG, 
+	return writereg(ina226->address, INA226_CONFIG_REG, 
 						   ina226->config.buffer.all);
 }
 
@@ -250,7 +250,7 @@ enum INA226_status ina226_set_calibration(struct INA226 * ina226,
 	swap_16b(&cal_data);
 	ina226->r_shunt = r_shunt;
 	ina226->max_expected_current = max_expected_current;
-	return ina226_writereg(ina226->address, INA226_CAL_REG, 
+	return writereg(ina226->address, INA226_CAL_REG, 
 						   cal_data);
 }
 
@@ -258,14 +258,14 @@ enum INA226_status ina226_set_mask_enable(struct INA226 * ina226,
 									 	  enum INA226_mask_enable mask_enable)
 {
 	ina226->mask_enable = mask_enable;
-	return ina226_writereg(ina226->address, INA226_MASK_EN_REG,
+	return writereg(ina226->address, INA226_MASK_EN_REG,
 						   mask_enable);
 }
 
 enum INA226_status ina226_clear_flags(struct INA226 * ina226)
 {
 	uint16_t buffer;
-	if(ina226_readreg(ina226->address, INA226_MASK_EN_REG, 
+	if(readreg(ina226->address, INA226_MASK_EN_REG, 
 					  &buffer) != OK) {
 		return FLAGS_NOT_CLEARED;
 	}
