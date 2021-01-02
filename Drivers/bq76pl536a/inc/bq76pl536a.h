@@ -45,6 +45,8 @@ enum BQ76_Status {
 	ADDRESS_CONFIG_FAIL = -4,
 	ADC_CONFIG_FAIL = -5,
 	CB_TIME_CONFIG_FAIL = -6,
+	FUNCTION_CONFIG_FAIL = -7,
+	IO_CONFIG_FAIL = -8,
 };
 
 struct BQ76_write_packet_format {
@@ -133,5 +135,37 @@ enum BQ76_status bq76_set_address(struct BQ76 * device);
 enum BQ76_status bq76_set_cb_time(struct BQ76 * device,
 								  uint8_t mins_secs, uint8_t balancing_time);
 
+
+/**
+ * @func bq76_set_function_config
+ * @brief sets a device's function config register
+ * @params[in] device: BQ76 pointer referencing to the desired device to be
+ * 			   resetted
+ * @params[in] gpai_ref: uint8_t variable that holds a flag indicating if the
+ * 			   GPAI reference is connected to the ADC bandgap or to V_REG50
+ * @params[in] gpai_src: uint8_t variable that holds a flag indicating whether
+ * 			   if the GPAI is connected to external GPAI inputos or to BAT1 pin
+ * @params[in] series_cells: uint8_t variable that indicates the number of
+ * 			   series cells used
+ * @return BQ76_status [OK|SPI_TRANSMISSION_ERROR]
+ */
+enum BQ76_status bq76_set_function_config(struct BQ76 * device,
+										  uint8_t gpai_ref, uint8_t gpai_src,
+										  enum series_cells series_cells);
+
+/**
+ * @func bq76_set_io_config
+ * @brief sets a device's I/O config register
+ * @params[in] device: BQ76 pointer referencing to the desired device to be
+ * 			   resetted
+ * @params[in] crc_enable: uint8_t variable that enables or disables CRC
+ * 			   calculation (0: ENABLED, 1: DISABLED)
+ * @params[in] crc_assert_pin: uint8_t variable that enables and disabled
+ * 			   detected CRC errors asserting the FAULT pin 
+ * 			   (0: ENABLED, 1: DISABLED)
+ * @return BQ76_status [OK|SPI_TRANSMISSION_ERROR]
+ */
+enum BQ76_status bq76_set_io_config(struct BQ76 * device,
+									uint8_t crc_enable, uint8_t crc_assert_pin);
 
 #endif 
