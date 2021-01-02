@@ -96,12 +96,16 @@ static enum BQ76_status readreg(uint8_t spi_address, uint8_t reg_address,
 		return SPI_TRANSMISSION_ERROR:
 	}
 	return OK;
+#endif
 }
 
 enum BQ76_status bq76_init(struct BQ76 * device, uint8_t new_spi_address,
 						   enum bat_series_inputs num_bat_series,
 						   enum temp_sensor_inputs ts, uint8_t gpai,
 						   uint8_t balancing_time_unit, uint8_t balancing_time,
+						   uint8_t gpai_ref, uint8_t gpai_src,
+						   enum series_cells series_cells,
+						   uint8_t crc_enable, uint8_t crc_assert_pin
 						   )
 {
 	// Send broadcast reset
@@ -126,6 +130,16 @@ enum BQ76_status bq76_init(struct BQ76 * device, uint8_t new_spi_address,
 	// config balancing time outputs
 	if(bq76_set_cb_time(device, balancing_time_unit, balancing_time) != OK){
 		return CB_TIME_CONFIG_FAIL;
+	}
+
+	// set function configuration
+	if(bq76_set_cb_time(device, gpai_ref, gpai_src, series_cells) != OK){
+		return FUNCTION_CONFIG_FAIL;
+	}
+
+	// set I/O configuration
+	if(bq76_set_io_config(device, crc_enable, crc_assert_pin) != OK){
+		return IO_CONFIG_FAIL;
 	}
 	
 }
@@ -194,3 +208,32 @@ enum BQ76_status bq76_set_cb_time(struct BQ76 * device,
 	return OK;
 }
 
+enum BQ76_status bq76_set_function_config(struct BQ76 * device,
+										  uint8_t gpai_ref, uint8_t gpai_src,
+										  enum series_cells series_cells)
+{
+	struct function_config function_config_buffer;
+	function_config_buffer.CN = series_cells;
+	function_config_buffer.GPAI_SRC = gpai_src;
+	function_config_buffer.GPAI_REF = gpai_ref;
+	if(writereg((uint8_t) device.address_control.ADDR, FUNCTION_CONFIG_REG,
+				(uint8_t) function_config_buffer) != OK){
+		return SPI_TRANSMISSION_ERROR;
+	}
+	device->function_config = function_config_buffer;
+	return OK;
+}
+
+enum BQ76_status bq76_set_io_config(struct BQ76 * device, uint8_t crc_enable,
+									uint8_t crc_assert_pin)
+{
+	struct io_config io_config_buffer;
+	io_config_buffer.CRC_DIS = crc_enable;
+	io_config_buffer.CRCNOFLT = crc_assert_pin;
+	if(writereg((uint8_t) device.address_control.ADDR, IO_CONFIG_REG,
+				(uint8_t) io_config_buffer) != OK){
+		return SPI_TRANSMISSION_ERROR;
+	}
+	device->io_config = io_config_buffer;
+	return OK;
+}
