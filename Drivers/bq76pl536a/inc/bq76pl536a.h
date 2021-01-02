@@ -42,7 +42,9 @@ enum BQ76_Status {
 	SPI_TRANSMISSION_ERROR = -1,
 	BROADCAST_RESET_FAIL = -2,
 	DEVICE_RESET_FAIL = -3,
-	ADDRESS_CONFIG_FAIL = -4
+	ADDRESS_CONFIG_FAIL = -4,
+	ADC_CONFIG_FAIL = -5,
+	CB_TIME_CONFIG_FAIL = -6,
 };
 
 struct BQ76_write_packet_format {
@@ -58,28 +60,28 @@ struct BQ76_read_packet_format {
 }
 
 struct BQ76 {
-	struct address_control address_control;
-	struct device_status device_status;
-	struct alert_status;
-	struct cov_fault;
-	struct cuv_fault;
-	struct presult_a;
-	struct presult_b;
+	struct BQ76 * north;
+	struct BQ76 * south;
 	struct adc_control;
-	struct io_control;
+	struct adc_convert;
+	struct address_control address_control;
+	struct alert_status;
 	struct cb_ctrl;
 	struct cb_time;
-	struct adc_convert;
-	struct function_config;
-	struct io_config;
 	struct cov_config;
+	struct cov_fault;
 	struct covt_config;
 	struct cuv_config;
+	struct cuv_fault;
 	struct cuvt_config;
-	uint8_t shadow_control; /**< to enable group3 regs write 0x35 to it*/
+	struct device_status device_status;
+	struct function_config;
+	struct io_config;
+	struct io_control;
+	struct presult_a;
+	struct presult_b;
 	uint8_t * host;
-	struct BQ76 * south;
-	struct BQ76 * north;
+	uint8_t shadow_control; /**< to enable group3 regs write 0x35 to it*/
 };
 
 /**
@@ -116,6 +118,20 @@ enum BQ76_status bq76_reset(struct BQ76 * device);
  * @return BQ76_status [OK|ADDRESS_CONFIG_FAIL|SPI_TRANSMISSION_ERROR]
  */
 enum BQ76_status bq76_set_address(struct BQ76 * device);
+
+/**
+ * @func bq76_set_cb_time
+ * @brief sets a device's balancing timeout
+ * @params[in] device: BQ76 pointer referencing to the desired device to be
+ * 			   resetted
+ * @params[in] mins_secs: uint8_t variable that holds a flag indicating if the
+ * 			   time unit are minutes (true) or seconds (false)
+ * @params[in] balancing_time: uint8_t variable holding the number of
+ * 			   seconds/minutes that the balalncers should be on
+ * @return BQ76_status [OK|SPI_TRANSMISSION_ERROR]
+ */
+enum BQ76_status bq76_set_cb_time(struct BQ76 * device,
+								  uint8_t mins_secs, uint8_t balancing_time);
 
 
 #endif 

@@ -544,7 +544,7 @@ struct cb_ctrl {
  * @brief struct that represents the cell balance time register
  */
 struct cb_time { 
-	uint8_t CBT:6;		/**< Determines if the CB(n) output is high or low */
+	uint8_t CBT:6;		/**< Sets the time duration as scaled by CB[7] */
 	uint8_t RESERVED:2; /**< Reserved */
 	uint8_t CBCT:1;		/**< Controls minutes/seconds counting resolution */
 };
