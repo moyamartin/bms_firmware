@@ -100,7 +100,9 @@ static enum BQ76_status readreg(uint8_t spi_address, uint8_t reg_address,
 
 enum BQ76_status bq76_init(struct BQ76 * device, uint8_t new_spi_address,
 						   enum bat_series_inputs num_bat_series,
-						   enum temp_sensor_inputs ts, )
+						   enum temp_sensor_inputs ts, uint8_t gpai,
+						   uint8_t balancing_time_unit, uint8_t balancing_time,
+						   )
 {
 	// Send broadcast reset
 	if(broadcast_reset() != OK){
@@ -113,6 +115,19 @@ enum BQ76_status bq76_init(struct BQ76 * device, uint8_t new_spi_address,
 	}
 
 	// config adc control register
+	struct adc_control adc_buffer;
+	adc_buffer.CELL_SEL = num_bat_series;
+	adc_buffer.GPAI = gpai;
+	adc_buffer.TS = ts;
+	if(bq76_set_adc_control(device, adc_buffer) != OK){
+		return ADC_CONFIG_FAIL;
+	}
+	
+	// config balancing time outputs
+	if(bq76_set_cb_time(device, balancing_time_unit, balancing_time) != OK){
+		return CB_TIME_CONFIG_FAIL;
+	}
+	
 }
 
 enum bq76_status bq76_broadcast_reset()
@@ -132,10 +147,10 @@ enum BQ76_status bq76_reset(struct BQ76 * device)
 	return OK;
 }
 
-enum BQ76_status bq76_set_address(struct BQ76 * device, uint8_t new_address)
+enum BQ76_status bq76_set_address(struct BQ76 * device, uint8_t address)
 {
 	// Write new address to device
-	if(writreg(device->address, ADDRESS_CONTROL_REG, new_address) != OK){
+	if(writreg(device->address, ADDRESS_CONTROL_REG, address) != OK){
 		return SPI_TRANSMISSION_ERROR;
 	}
 	// Check if the address has been correctly set
@@ -152,3 +167,30 @@ enum BQ76_status bq76_set_address(struct BQ76 * device, uint8_t new_address)
 	}
 	return OK;
 }
+
+enum BQ76_status bq76_set_adc_control(struct BQ76 * device, 
+									  struct adc_control adc)
+{
+	if(writereg((uint8_t) device->address_control.ADDR, ADC_CONTROL_REG, 
+				(uint8_t) adc) != OK){
+		return SPI_TRANSMISSSION_ERROR;
+	}
+	// update the BQ76 device_status local reg
+	device->adc_control = adc;
+	return OK;
+}
+
+enum BQ76_status bq76_set_cb_time(struct BQ76 * device,
+								  uint8_t mins_secs, uint8_t balancing_time)
+{
+	struct cb_time;
+	cb_time.CBCT = mins_secs;
+	cb_time.CBT = (balancing_time > 63) ? 63 : balancing_time;
+	if(writereg((uint8_t) device.address_control.ADDR, CB_TIME_REG, 
+				(uint8_t) cb_time) != OK){
+		return SPI_TRANSMISSION_ERROR;
+	}
+	device->cb_time = cb_time;
+	return OK;
+}
+
