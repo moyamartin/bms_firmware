@@ -97,3 +97,58 @@ static enum BQ76_status readreg(uint8_t spi_address, uint8_t reg_address,
 	}
 	return OK;
 }
+
+enum BQ76_status bq76_init(struct BQ76 * device, uint8_t new_spi_address,
+						   enum bat_series_inputs num_bat_series,
+						   enum temp_sensor_inputs ts, )
+{
+	// Send broadcast reset
+	if(broadcast_reset() != OK){
+		return BROADCAST_RESET_FAIL;
+	}
+
+	// set address to device
+	if(bq76_set_address(device, new_spi_address) != OK){
+		return ADDRESS_CONFIG_FAIL;
+	}
+
+	// config adc control register
+}
+
+enum bq76_status bq76_broadcast_reset()
+{
+	if(writereg(BROADCAST_ADDRESS, RESET_REG, RESET_DEVICE_VALUE) != OK){
+		return SPI_TRANSMISSION_ERROR;
+	}
+	return OK;
+}
+
+enum BQ76_status bq76_reset(struct BQ76 * device)
+{
+	if(writereg((uint8_t) device->address_control.ADDR, RESET_REG, 
+				RESET_DEVICE_VALUE) != OK){
+		return SPI_TRANSMISSION_ERROR;
+	}
+	return OK;
+}
+
+enum BQ76_status bq76_set_address(struct BQ76 * device, uint8_t new_address)
+{
+	// Write new address to device
+	if(writreg(device->address, ADDRESS_CONTROL_REG, new_address) != OK){
+		return SPI_TRANSMISSION_ERROR;
+	}
+	// Check if the address has been correctly set
+	struct address_control address_buffer;
+	// 1 - read new address
+	if(readreg(new_address, ADDRESS_CONTROL_REG, 1, &address_buffer) != OK){
+		return SPI_TRANSMISSION_ERROR;
+	}
+	// 2 - check if the ADDR_RQST is not set or the ADDR[n] is different from 
+	// the new address
+	if(!address_buffer.ADDR_RQST || 
+			(uint8_t) address_buffer.ADDR != new_address){
+		return ADDRESS_CONFIG_FAIL;
+	}
+	return OK;
+}

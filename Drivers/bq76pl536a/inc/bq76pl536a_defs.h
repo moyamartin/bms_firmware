@@ -229,7 +229,14 @@
  *	Default value: 0b00000000 0x00
  *	Type: R/W - GROUP 2
  */
-#define SHADOW_CONTROL_REG		(0x3b)
+#define SHADOW_CONTROL_REG		(0x3a)
+
+/** 
+ * BQ76PL536A Address Control address 
+ *	Default value: 0b00000000 0x00
+ *	Type: R/W - GROUP 2
+ */
+#define ADDRESS_CONTROL_REG		(0x3b)
 
 /** 
  * BQ76PL536A Reset address 
@@ -349,12 +356,9 @@
 #define RESET_DEVICE_VALUE		(0xA5)
 
 /**
- * BQ76PL536A Write this value to E_EN (0x3F) to access the programming of the
- * integraed OTP EEPROM
+ * broadcast address
  */
-#define RESET_DEVICE_VALUE		(0xA5)
-
-
+#define BROADCAST_ADDRESS		(0x3f)
 
 
 /**
@@ -487,7 +491,7 @@ enum temp_sensor_inputs{
  * related to bit fields CELL_SEL on adc_control
  * @see adc_control
  */
-enum temp_sensor_inputs{
+enum bat_series_inputs {
 	CELL_1 = 0b000,
 	CELL_1_2 = 0b001,
 	CELL_1_3 = 0b010,
