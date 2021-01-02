@@ -91,8 +91,8 @@ static enum BQ76_status readreg(uint8_t spi_address, uint8_t reg_address,
 						BQ76_TIMEOUT) != HAL_OK){
 		return SPI_TRANSMISSION_ERROR;
 	}
-	if(HAL_SPI_Receive(&BQ76_INTERFACE, rx_packet, read_length, 
-				BQ76_TIMEOUT) != HAL_OK){
+	if(HAL_SPI_Receive(&BQ76_INTERFACE, data, read_length, 
+					   BQ76_TIMEOUT) != HAL_OK){
 		return SPI_TRANSMISSION_ERROR:
 	}
 	return OK;
