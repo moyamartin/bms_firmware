@@ -1,3 +1,16 @@
+
+/******************************************************************************
+ *
+ * @file	bq76pl536a.h
+ * @brief 	Texas Instruments BQ76PL536A high level data structures definitions
+ * @version	v1.00f00
+ * @date	27, Dec. 2020
+ * @author	CECARELLI, Federico (fededc88@gmail.com),
+ * 			MOYA, Martin		(moyamartin1@gmail.com),
+ * 			SANTOS, Lucio		(lusho2206@gmail.com)
+ * @copyright GPL license, all text here must be included in any redistribution
+ *****************************************************************************/
+
 #include "bq76pl536a_defs.h"
 
 #if defined(USE_HAL_DRIVER) && defined(STM32F407xx)
@@ -27,6 +40,9 @@
 enum BQ76_Status {
 	OK = 0,
 	SPI_TRANSMISSION_ERROR = -1,
+	BROADCAST_RESET_FAIL = -2,
+	DEVICE_RESET_FAIL = -3,
+	ADDRESS_CONFIG_FAIL = -4
 };
 
 struct BQ76_write_packet_format {
@@ -42,7 +58,8 @@ struct BQ76_read_packet_format {
 }
 
 struct BQ76 {
-	struct device_status;
+	struct address_control address_control;
+	struct device_status device_status;
 	struct alert_status;
 	struct cov_fault;
 	struct cuv_fault;
@@ -53,7 +70,6 @@ struct BQ76 {
 	struct cb_ctrl;
 	struct cb_time;
 	struct adc_convert;
-	struct address_control;
 	struct function_config;
 	struct io_config;
 	struct cov_config;
@@ -65,3 +81,41 @@ struct BQ76 {
 	struct BQ76 * south;
 	struct BQ76 * north;
 };
+
+/**
+ * @func bq76_init
+ * @brief Initializes a bq76 struct
+ * @params[in] device: pointer that points to a BQ76 struct
+ * @return BQ76_status [OK|SPI_TRANSMISSION_ERROR]
+ */
+enum BQ76_status bq76_init(struct BQ76 * device);
+
+/**
+ * @func bq76_broadcast_reset
+ * @brief Sends a reset broadcast to all connected devices with a valid address
+ * @returns bq76_status [OK|SPI_TRANSMISSION_ERROR]
+ */
+enum BQ76_status bq76_broadcast_reset();
+
+/**
+ * @func bq76_reset
+ * @brief sends a reset command to a specified device
+ * @params[in] device: BQ76 pointer referencing to the desired device to be
+ * 			   resetted
+ * @return BQ76_status [OK|SPI_TRANSMISSION_ERROR]
+ */
+enum BQ76_status bq76_reset(struct BQ76 * device);
+
+/**
+ * @func bq76_set_address
+ * @brief sets a device's address and check if it was properly set
+ * @params[in] device: BQ76 pointer referencing to the desired device to be
+ * 			   resetted
+ * @params[in] new_address: uint8_t variable that holds the new address of the
+ * 			   device
+ * @return BQ76_status [OK|ADDRESS_CONFIG_FAIL|SPI_TRANSMISSION_ERROR]
+ */
+enum BQ76_status bq76_set_address(struct BQ76 * device);
+
+
+#endif 
