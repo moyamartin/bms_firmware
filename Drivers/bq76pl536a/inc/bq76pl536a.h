@@ -48,6 +48,7 @@ enum BQ76_Status {
 	FUNCTION_CONFIG_FAIL = -7,
 	IO_CONFIG_FAIL = -8,
 	COV_CONFIG_FAIL = -9,
+	COVT_CONFIG_FAIL = -10,
 };
 
 struct BQ76_write_packet_format {
@@ -187,7 +188,7 @@ enum BQ76_status bq76_set_cov_config(struct BQ76 * device, uint8_t disable,
  * @func bq76_set_covt_config
  * @brief sets a device's Cell Overvoltage delay time
  * @params[in] device: BQ76 pointer referencing to the desired device to be
- * 			   resetted
+ * 			   modified
  * @params[in] time_unit: uint8_t variable that determines the units of the
  * 			   delay time, microseconds or miliseconds 
  * 			   (0: microseconds, 1: miliseconds)

@@ -141,6 +141,7 @@ enum BQ76_status bq76_init(struct BQ76 * device, uint8_t new_spi_address,
 						   enum series_cells series_cells,
 						   uint8_t crc_enable, uint8_t crc_assert_pin,
 						   uint8_t cov_disable, uint8_t cov_threshold,
+						   uint8_t covt_time_unit, uint8_t covt_delay
 						   )
 {
 	// Send broadcast reset
@@ -181,6 +182,16 @@ enum BQ76_status bq76_init(struct BQ76 * device, uint8_t new_spi_address,
 	if(bq76_set_cov_config(device, cov_disable, voltage_threshold) != OK){
 		return COV_CONFIG_FAIL;
 	}
+
+	// set covt config
+	if(bq76_set_covt_config(device, covt_time_unit, covt_delay) != OK){
+		return COVT_CONFIG_FAIL;
+	}
+
+	// set cuv config
+	
+	
+	// set cuvt config
 }
 
 enum BQ76_status bq76_broadcast_reset()
