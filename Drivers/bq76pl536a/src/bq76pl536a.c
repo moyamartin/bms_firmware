@@ -1,6 +1,41 @@
 #include "bq76pl536a.h"
 
 /**
+ * @func calculate_ott
+ * @brief calculates the ott_config value given the delay time in a uint16_t
+ * 		  variable
+ * @params[in] delay_time: uint16_t variable that holds the desired delay time
+ * 			   in miliseconds
+ * @return uint8_t ott value
+ */
+static uint8_t calculate_ott(uint16_t delay_time)
+{
+	delay_time = (delay_time > 2550) ? 2550 : delay_time;
+	return delay_time/OTT_LSB_VALUE;
+}
+
+/**
+ * @func  calculate_ot
+ * @brief calculates the ot_config temperature threshold value given the desired
+ * 		  temperature threshold
+ * @params[in] temperature_threshold: uint8_t variable that holds the desired
+ * 			   temperature threshold value
+ * @note the temperature has to be multiple of 5
+ * @return uint8_t ot value
+ */
+
+static uint8_t calculate_ot(uint8_t temperature_threshold)
+{
+	if(temperature_threshold > MAX_CAL_TEMP){
+		temperature_threshold = MAX_CAL_TEMP;
+	}
+	if(temperature_threshold < MIN_CAL_TEMP){
+		temperature_threshold = MIN_CAL_TEMP;
+	}
+	return 1 + ((temperature_threshold - MIN_CAL_TEMP)/CAL_TEMP_LSB);
+}
+
+/**
  * @func  calculate_cuv
  * @brief calculates the cuv_config voltage threshold value given the desired
  * 		  floating undervoltage value
@@ -11,10 +46,10 @@
 static uint8_t calculate_cuv(float32_t undervoltage_value)
 {
 	if(undervoltage_value < MIN_CUV_VALUE){
-		return 0x00;	
+		undervoltage_value = MIN_CUV_VALUE;	
 	} 
 	if(undervoltage_value > MAX_CUV_VALUE){
-		return 0x1A;
+		undervoltage_value = MAX_CUV_VALUE;
 	}
 	return (uint8_t)((undervoltage_value - MIN_CUV_VALUE)/CUV_LSB_VALUE);
 }
@@ -30,10 +65,10 @@ static uint8_t calculate_cuv(float32_t undervoltage_value)
 static uint8_t calculate_cov(float32_t overvoltage_value)
 {
 	if(overvoltage_value < MIN_COV_VALUE) {
-		return 0x00;
+		overvoltage_value = MIN_COV_VALUE;
 	}
 	if(overvoltage_value > MAX_COV_VALUE) {
-		return 0x3C;
+		overvoltage_value = MAX_COV_VALUE;
 	}
 	return (uint8_t)((overvoltage_value - MIN_COV_VALUE)/COV_LSB_VALUE);
 }
@@ -46,12 +81,12 @@ static uint8_t calculate_cov(float32_t overvoltage_value)
  * 			   delay_time
  * @return uint8_t covt register value
  */
-static uint8_t calculate_covt(uint16_t delay_time)
+static uint8_t calculate_delay(uint16_t delay_time)
 {
-	if(delay_time > MAX_COVT_VALUE){
-		return MAX_COVT_VALUE/COVT_LSB_VALUE;
+	if(delay_time > MAX_DELAY_VALUE){
+		return MAX_DELAY_VALUE/DELAY_LSB_VALUE;
 	}
-	return delay_time/COVT_LSB_VALUE;
+	return delay_time/DELAY_LSB_VALUE;
 }
 
 /**
@@ -162,7 +197,8 @@ enum BQ76_status bq76_init(struct BQ76 * device, uint8_t new_spi_address,
 						   uint8_t cov_disable, uint8_t cov_threshold,
 						   uint8_t covt_time_unit, uint8_t covt_delay,
 						   uint8_t cuv_disable, uint8_t cuv_threshold,
-						   )
+						   uint8_t temp1_threshold, uint8_t temp2_threshold,
+						   uint16_t ott_temp_delay)
 {
 	// Send broadcast reset
 	if(broadcast_reset() != OK){
@@ -175,11 +211,7 @@ enum BQ76_status bq76_init(struct BQ76 * device, uint8_t new_spi_address,
 	}
 
 	// config adc control register
-	struct adc_control adc_buffer;
-	adc_buffer.CELL_SEL = num_bat_series;
-	adc_buffer.GPAI = gpai;
-	adc_buffer.TS = ts;
-	if(bq76_set_adc_control(device, adc_buffer) != OK){
+	if(bq76_set_adc_control(device, num_bat_series, ts, gpai) != OK){
 		return ADC_CONFIG_FAIL;
 	}
 	
@@ -209,9 +241,29 @@ enum BQ76_status bq76_init(struct BQ76 * device, uint8_t new_spi_address,
 	}
 
 	// set cuv config
-	if(bq76_set_cuv_config(device, cuv_disable, cuv_threshol) != OK){
+	if(bq76_set_cuv_config(device, cuv_disable, cuv_threshold) != OK){
 		return CUV_CONFIG_FAIL;
 	}
+
+	// set cuvt config
+	if(bq76_set_cuvt_config(device, cuvt_time_unit, cuvt_delay) != OK){
+		return CUVT_CONFIG_FAIL;
+	}
+
+	// set ot config
+	if(bq76_set_ot_config(device, temp1_threshold, temp2_threshold) != OK){
+		return OT_CONFIG_FAIL;
+	}
+
+	// set ott config
+	if(bq76_set_ott_config(device, ott_temp_delay) != OK){
+		return OTT_CONFIG_FAIL;
+	}
+	return OK;
+}
+
+enum BQ76_status bq76_init_default(){
+
 }
 
 enum BQ76_status bq76_broadcast_reset()
@@ -246,21 +298,26 @@ enum BQ76_status bq76_set_address(struct BQ76 * device, uint8_t address)
 	// 2 - check if the ADDR_RQST is not set or the ADDR[n] is different from 
 	// the new address
 	if(!address_buffer.ADDR_RQST || 
-			(uint8_t) address_buffer.ADDR != new_address){
+			(uint8_t) address_buffer->ADDR != new_address){
 		return ADDRESS_CONFIG_FAIL;
 	}
 	return OK;
 }
 
 enum BQ76_status bq76_set_adc_control(struct BQ76 * device, 
-									  struct adc_control adc)
+									  enum bat_series_inputs num_bat_series, 
+									  enum temp_sensor_inputs ts, uint8_t gpai)
 {
+	struct adc_control adc_control_buffer;
+	adc_control_buffer.CELL_SEL = num_bat_series;
+	adc_control_buffer.GPAI = gpai;
+	adc_control_buffer.TS = ts;
 	if(writereg((uint8_t) device->address_control.ADDR, ADC_CONTROL_REG, 
 				(uint8_t) adc) != OK){
 		return SPI_TRANSMISSSION_ERROR;
 	}
 	// update the BQ76 device_status local reg
-	device->adc_control = adc;
+	device->adc_control = adc_control_buffer;
 	return OK;
 }
 
@@ -270,7 +327,7 @@ enum BQ76_status bq76_set_cb_time(struct BQ76 * device,
 	struct cb_time;
 	cb_time.CBCT = mins_secs;
 	cb_time.CBT = (balancing_time > 63) ? 63 : balancing_time;
-	if(writereg((uint8_t) device.address_control.ADDR, CB_TIME_REG, 
+	if(writereg((uint8_t) device->address_control.ADDR, CB_TIME_REG, 
 				(uint8_t) cb_time) != OK){
 		return SPI_TRANSMISSION_ERROR;
 	}
@@ -286,7 +343,7 @@ enum BQ76_status bq76_set_function_config(struct BQ76 * device,
 	function_config_buffer.CN = series_cells;
 	function_config_buffer.GPAI_SRC = gpai_src;
 	function_config_buffer.GPAI_REF = gpai_ref;
-	if(writereg((uint8_t) device.address_control.ADDR, FUNCTION_CONFIG_REG,
+	if(writereg((uint8_t) device->address_control.ADDR, FUNCTION_CONFIG_REG,
 				(uint8_t) function_config_buffer) != OK){
 		return SPI_TRANSMISSION_ERROR;
 	}
@@ -300,7 +357,7 @@ enum BQ76_status bq76_set_io_config(struct BQ76 * device, uint8_t crc_enable,
 	struct io_config io_config_buffer;
 	io_config_buffer.CRC_DIS = crc_enable;
 	io_config_buffer.CRCNOFLT = crc_assert_pin;
-	if(writereg((uint8_t) device.address_control.ADDR, IO_CONFIG_REG,
+	if(writereg((uint8_t) device->address_control.ADDR, IO_CONFIG_REG,
 				(uint8_t) io_config_buffer) != OK){
 		return SPI_TRANSMISSION_ERROR;
 	}
@@ -311,10 +368,10 @@ enum BQ76_status bq76_set_io_config(struct BQ76 * device, uint8_t crc_enable,
 enum BQ76_status bq76_set_cov_config(struct BQ76 * device, uint8_t disable,
 									 float32_t voltage_threshold)
 {
-	struct cov_config_buffer;
+	struct vth_config cov_config_buffer;
 	cov_config_buffer.COV = calculate_cov(voltage_threshold);
 	cov_config_buffer.DISABLE = disable;
-	if(writereg((uint8_t) device.address_control.ADDR, COV_CONFIG_REG, 
+	if(writereg((uint8_t) device->address_control.ADDR, COV_CONFIG_REG, 
 				(uint8_t) cov_config_buffer) != OK){
 		return SPI_TRANSMISSION_ERROR;
 	}
@@ -322,30 +379,71 @@ enum BQ76_status bq76_set_cov_config(struct BQ76 * device, uint8_t disable,
 	return OK;
 }
 
-enum BQ76_status bq76_set_covt_config(struct BQ76 * device, uint8_t time_unit,
-									  uint16_t delay)
-{
-	struct covt_config covt_config_buffer;
-	covt_config_buffer.US_MS = time_unit;
-	covt_config_buffer.COVD = calculate_cov(delay);
-	if(writreg((uint8_t) device.address_control.ADDR, COVT_CONFIG_REG, 
-				(uint8_t) covt_config_buffer) != OK){ 
-		return SPI_TRANSMISSION_ERROR;
-	}
-	device->covt_config = covt_config_buffer;
-	return OK;
-}
-
 enum BQ76_status bq76_set_cuv_config(struct BQ76 * device, uint8_t disable,
 									 float32_t voltage_threshold)
 {
-	struct cuv_config cuv_config_buffer;
+	struct vth_config cuv_config_buffer;
 	cuv_config_buffer.CUV = calculate_cuv(voltage_threshold);
 	cuv_config_buffer.DISABLED = disable;
-	if(writereg((uint8_t) device.address_control.ADDR, CUV_CONFIG_REG,
+	if(writereg((uint8_t) device->address_control.ADDR, CUV_CONFIG_REG,
 			    (uint8_t) cuv_config_buffer) != OK){
 		return SPI_TRANSMISSION_ERROR;
 	}
 	device->cuv_config = cuv_config_buffer;
+	return OK;
+}
+
+enum BQ76_status bq76_set_covt_config(struct BQ76 * device,	uint8_t time_unit,
+									  float32_t delay)
+{
+	struct delay_config covt_config_buffer;
+	covt_config_buffer.US_MS = time_unit;
+	covt_config_buffer.CUVD = calculate_delay(delay);
+	if(writereg((uint8_t) device->address_control.ADDR, COVT_CONFIG_REG, 
+				(uint8_t) cuvt_config_buffer) != OK){
+		return SPI_TRANSMISSION_ERROR;
+	}
+	device->cuvt_config = cuvt_config_buffer;
+	return OK;
+}
+
+enum BQ76_status bq76_set_cuvt_config(struct BQ76 * device,	uint8_t time_unit,
+									  float32_t delay)
+{
+	struct delay_config cuvt_config_buffer;
+	cuvt_config_buffer.US_MS = time_unit;
+	cuvt_config_buffer.CUVD = calculate_delay(delay);
+	if(writereg((uint8_t) device->address_control.ADDR, CUVT_CONFIG_REG, 
+				(uint8_t) cuvt_config_buffer) != OK){
+		return SPI_TRANSMISSION_ERROR;
+	}
+	device->cuvt_config = cuvt_config_buffer;
+	return OK;
+}
+
+enum BQ76_status bq76_set_ot_config(struct BQ76 * device, 
+									float32_t ot1_threshold, 
+									float32_t ot2_threshold)
+{ 
+	struct ot_config ot_config_buffer;
+	ot_config_buffer.OT1 = calculate_ot(ot1_threshold);
+	ot_config_buffer.OT2 = calculate_ot(ot2_threshold);
+	if(writreg((uint8_t) device->address_control.ADDR, OT_CONFIG_REG,
+			   (uint8_t) ot_config_buffer) != OK){
+		return SPI_TRANSMISSION_ERROR;
+	}
+	device->ot_config = ot_config_buffer;
+	return OK;
+}
+
+enum BQ76_status bq76_set_ott_config(struct BQ76 * device,
+									 uint16_t delay_value)
+{
+	uint8_t ott_config_buffer = delay_value;
+	if(writereg((uint8_t) device->address_control.ADDR, OTT_CONFIG_REG,
+				ott_config_buffer) != OK){
+		return SPI_TRANSMISSION_ERROR;
+	}
+	device->ott_config = ott_config_buffer;
 	return OK;
 }

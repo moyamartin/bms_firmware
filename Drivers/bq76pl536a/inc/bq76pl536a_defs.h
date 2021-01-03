@@ -284,35 +284,35 @@
  *	Default value: 0b00000000 0x00
  *	Type: R/W - GROUP 3
  */
-#define CONFIG_COVT_REG			(0x43)
+#define COVT_CONFIG_REG			(0x43)
 
 /** 
  * BQ76PL536A CUV Config Configuration address 
  *	Default value: 0b00000000 0x00
  *	Type: R/W - GROUP 3
  */
-#define CONFIG_CUV_REG			(0x44)
+#define CUV_CONFIG_REG			(0x44)
 
 /** 
  * BQ76PL536A CUVT Config Configuration address 
  *	Default value: 0b00000000 0x00
  *	Type: R/W - GROUP 3
  */
-#define CONFIG_CUVT_REG			(0x45)
+#define CUVT_CONFIG_REG			(0x45)
 
 /** 
  * BQ76PL536A OT Config Configuration address 
  *	Default value: 0b00000000 0x00
  *	Type: R/W - GROUP 3
  */
-#define CONFIG_OT_REG			(0x45)
+#define OT_CONFIG_REG			(0x45)
 
 /** 
  * BQ76PL536A OTT Config Configuration address 
  *	Default value: 0b00000000 0x00
  *	Type: R/W - GROUP 3
  */
-#define CONFIG_OTT_REG			(0x46)
+#define OTT_CONFIG_REG			(0x46)
 
 /** 
  * BQ76PL536A USER1 Register address 
@@ -370,9 +370,13 @@
 #define MAX_CUV_VALUE			3.3f
 #define CUV_LSB_VALUE			0.1f
 
-#define MAX_COVT_VALUE			3100
-#define COVT_LSB_VALUE			100
+#define MAX_DELAY_VALUE			3100
+#define DELAY_LSB_VALUE			100
 
+#define MAX_CAL_TEMP			90.0f
+#define MIN_CAL_TEMP			40.0f
+#define CAL_TEMP_LSB			5f
+#define OTT_LSB_VALUE			10
 
 /**
  * @struct device_status
@@ -616,43 +620,33 @@ struct io_config {
 };
 
 /**
- * @struct cov_config 
- * @brief struct that represents the cov config register data
+ * @struct vth_config
+ * @brief struct that represents the Overvoltage/Undervoltage config register 
+ * 		  data
  */
-struct cov_config { 
-	uint8_t COV:6;		/**< Overvoltage voltage threshold */
+struct vth_config { 
+	uint8_t VTH:6;		/**< Overvoltage/Undervolage threshold */
 	uint8_t RESERVED:1;	/**< RESERVED */		
-	uint8_t DISABLE:1;	/**< Enable/Disable the OVT function */
+	uint8_t DISABLE:1;	/**< Enable/Disable the COV/UVT function */
 };
 
 /**
- * @struct config_covt
- * @brief struct that represents the covt config register data
+ * @struct config_delay
+ * @brief struct that represents the covt/cuvt config register data
  */
-struct covt_config { 
-	uint8_t COVD:5;		/**< Overvoltage detection delay time */
+struct delay_config { 
+	uint8_t DELAY:5;	/**< Delay time */
 	uint8_t RESERVED:2;	/**< RESERVED */		
-	uint8_t US_MS:1;	/**< Sets uS/mS */
+	uint8_t DISABLE:1;	/**< Enable/Disable the COVT/CUVT function */
 };
 
 /**
- * @struct config_cuv
- * @brief struct that represents the cuv config register data
+ * @struct ot_config
+ * @brief struct that represents the OT config register data
  */
-struct cuv_config { 
-	uint8_t CUV:5;		/**< Undervoltage threshold */
-	uint8_t RESERVED:2;	/**< RESERVED */		
-	uint8_t DISABLE:1;	/**< Enable/Disable the OVT function */
-};
-
-/**
- * @struct config_cuvt
- * @brief struct that represents the cuvt config register data
- */
-struct cuvt_config { 
-	uint8_t CUVD:5;		/**< Undervoltage detection delay time */
-	uint8_t RESERVED:2;	/**< RESERVED */		
-	uint8_t US_MS:1;	/**< Sets uS/mS */
-};
+struct ot_config {
+	uint8_t OT1:4;
+	uint8_t OT2:4;
+}
 
 #endif /* bq76pl536a_defs.h */
