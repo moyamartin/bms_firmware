@@ -1,6 +1,25 @@
 #include "bq76pl536a.h"
 
 /**
+ * @func  calculate_cuv
+ * @brief calculates the cuv_config voltage threshold value given the desired
+ * 		  floating undervoltage value
+ * @params[in] undervoltage_value: float32_t variable that holds the desired
+ * 			   undervoltage value detection
+ * @return uint8_t cuv register value
+ */
+static uint8_t calculate_cuv(float32_t undervoltage_value)
+{
+	if(undervoltage_value < MIN_CUV_VALUE){
+		return 0x00;	
+	} 
+	if(undervoltage_value > MAX_CUV_VALUE){
+		return 0x1A;
+	}
+	return (uint8_t)((undervoltage_value - MIN_CUV_VALUE)/CUV_LSB_VALUE);
+}
+
+/**
  * @func  calculate_cov
  * @brief calculates the cov_config voltage threshold value given the desired 
  * 		  floating overvoltage value
@@ -141,7 +160,8 @@ enum BQ76_status bq76_init(struct BQ76 * device, uint8_t new_spi_address,
 						   enum series_cells series_cells,
 						   uint8_t crc_enable, uint8_t crc_assert_pin,
 						   uint8_t cov_disable, uint8_t cov_threshold,
-						   uint8_t covt_time_unit, uint8_t covt_delay
+						   uint8_t covt_time_unit, uint8_t covt_delay,
+						   uint8_t cuv_disable, uint8_t cuv_threshold,
 						   )
 {
 	// Send broadcast reset
@@ -189,9 +209,9 @@ enum BQ76_status bq76_init(struct BQ76 * device, uint8_t new_spi_address,
 	}
 
 	// set cuv config
-	
-	
-	// set cuvt config
+	if(bq76_set_cuv_config(device, cuv_disable, cuv_threshol) != OK){
+		return CUV_CONFIG_FAIL;
+	}
 }
 
 enum BQ76_status bq76_broadcast_reset()
@@ -316,4 +336,16 @@ enum BQ76_status bq76_set_covt_config(struct BQ76 * device, uint8_t time_unit,
 	return OK;
 }
 
-enum 
+enum BQ76_status bq76_set_cuv_config(struct BQ76 * device, uint8_t disable,
+									 float32_t voltage_threshold)
+{
+	struct cuv_config cuv_config_buffer;
+	cuv_config_buffer.CUV = calculate_cuv(voltage_threshold);
+	cuv_config_buffer.DISABLED = disable;
+	if(writereg((uint8_t) device.address_control.ADDR, CUV_CONFIG_REG,
+			    (uint8_t) cuv_config_buffer) != OK){
+		return SPI_TRANSMISSION_ERROR;
+	}
+	device->cuv_config = cuv_config_buffer;
+	return OK;
+}
