@@ -178,22 +178,24 @@ enum BQ76_status bq76_set_io_config(struct BQ76 * device,
  * @params[in] disable: uint8_t variable that disables the cov function
  * @params[in] voltage_threshold: float32_t that holds the voltage_threshold
  * 			   value
- *
+ * @return BQ76_status [OK|SPI_TRANSMISSION_ERROR]
  */
 enum BQ76_status bq76_set_cov_config(struct BQ76 * device, uint8_t disable, 
 									 float32_t voltage_threshold);
 
 /**
  * @func bq76_set_covt_config
- * @brief sets a device's Cell Overvoltage Threshold value
+ * @brief sets a device's Cell Overvoltage delay time
  * @params[in] device: BQ76 pointer referencing to the desired device to be
  * 			   resetted
- * @params[in] disable: uint8_t variable that disables the cov function
- * @params[in] voltage_threshold: float32_t that holds the voltage_threshold
- * 			   value
- *
+ * @params[in] time_unit: uint8_t variable that determines the units of the
+ * 			   delay time, microseconds or miliseconds 
+ * 			   (0: microseconds, 1: miliseconds)
+ * @params[in] voltage_threshold: uint16_t variable that holds the 
+ * 								  delay time
+ * @return BQ76_status [OK|SPI_TRANSMISSION_ERROR]
  */
-enum BQ76_status bq76_set_cov_config(struct BQ76 * device, uint8_t disable, 
-									 float32_t voltage_threshold);
+enum BQ76_status bq76_set_covt_config(struct BQ76 * device, uint8_t time_unit, 
+									  uint16_t delay); 
 
 #endif 

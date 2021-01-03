@@ -20,6 +20,22 @@ static uint8_t calculate_cov(float32_t overvoltage_value)
 }
 
 /**
+ * @func  calculate_covt
+ * @brief calculates the covt_config delay time given the desired uint16_t 
+ * 		  desired time delay
+ * @params[in] delay_time: uint16_t variable that holds the desired
+ * 			   delay_time
+ * @return uint8_t covt register value
+ */
+static uint8_t calculate_covt(uint16_t delay_time)
+{
+	if(delay_time > MAX_COVT_VALUE){
+		return MAX_COVT_VALUE/COVT_LSB_VALUE;
+	}
+	return delay_time/COVT_LSB_VALUE;
+}
+
+/**
  * @func init_write_packet
  * @brief It generates a BQ76_write_packet_format struct given the device 
  * 	  	  address, register address and register data
@@ -274,3 +290,19 @@ enum BQ76_status bq76_set_cov_config(struct BQ76 * device, uint8_t disable,
 	device->cov_config = cov_config_buffer;
 	return OK;
 }
+
+enum BQ76_status bq76_set_covt_config(struct BQ76 * device, uint8_t time_unit,
+									  uint16_t delay)
+{
+	struct covt_config covt_config_buffer;
+	covt_config_buffer.US_MS = time_unit;
+	covt_config_buffer.COVD = calculate_cov(delay);
+	if(writreg((uint8_t) device.address_control.ADDR, COVT_CONFIG_REG, 
+				(uint8_t) covt_config_buffer) != OK){ 
+		return SPI_TRANSMISSION_ERROR;
+	}
+	device->covt_config = covt_config_buffer;
+	return OK;
+}
+
+enum 
