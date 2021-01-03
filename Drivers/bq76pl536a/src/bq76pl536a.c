@@ -1,6 +1,25 @@
 #include "bq76pl536a.h"
 
 /**
+ * @func  calculate_cov
+ * @brief calculates the cov_config voltage threshold value given the desired 
+ * 		  floating overvoltage value
+ * @params[in] overvoltage_value: float32_t variable that holds the desired
+ * 			   overvoltage value detection
+ * @return uint8_t cov register value
+ */
+static uint8_t calculate_cov(float32_t overvoltage_value)
+{
+	if(overvoltage_value < MIN_COV_VALUE) {
+		return 0x00;
+	}
+	if(overvoltage_value > MAX_COV_VALUE) {
+		return 0x3C;
+	}
+	return (uint8_t)((overvoltage_value - MIN_COV_VALUE)/COV_LSB_VALUE);
+}
+
+/**
  * @func init_write_packet
  * @brief It generates a BQ76_write_packet_format struct given the device 
  * 	  	  address, register address and register data
@@ -39,7 +58,6 @@ static struct BQ76_read_packet_format init_read_packet(uint8_t device_address,
 	packet.read_length = read_length;
 	return packet;
 }
-
 
 /**
  * @func writereg
@@ -105,7 +123,8 @@ enum BQ76_status bq76_init(struct BQ76 * device, uint8_t new_spi_address,
 						   uint8_t balancing_time_unit, uint8_t balancing_time,
 						   uint8_t gpai_ref, uint8_t gpai_src,
 						   enum series_cells series_cells,
-						   uint8_t crc_enable, uint8_t crc_assert_pin
+						   uint8_t crc_enable, uint8_t crc_assert_pin,
+						   uint8_t cov_disable, uint8_t cov_threshold,
 						   )
 {
 	// Send broadcast reset
@@ -141,10 +160,14 @@ enum BQ76_status bq76_init(struct BQ76 * device, uint8_t new_spi_address,
 	if(bq76_set_io_config(device, crc_enable, crc_assert_pin) != OK){
 		return IO_CONFIG_FAIL;
 	}
-	
+
+	// set cov config
+	if(bq76_set_cov_config(device, cov_disable, voltage_threshold) != OK){
+		return COV_CONFIG_FAIL;
+	}
 }
 
-enum bq76_status bq76_broadcast_reset()
+enum BQ76_status bq76_broadcast_reset()
 {
 	if(writereg(BROADCAST_ADDRESS, RESET_REG, RESET_DEVICE_VALUE) != OK){
 		return SPI_TRANSMISSION_ERROR;
@@ -235,5 +258,19 @@ enum BQ76_status bq76_set_io_config(struct BQ76 * device, uint8_t crc_enable,
 		return SPI_TRANSMISSION_ERROR;
 	}
 	device->io_config = io_config_buffer;
+	return OK;
+}
+
+enum BQ76_status bq76_set_cov_config(struct BQ76 * device, uint8_t disable,
+									 float32_t voltage_threshold)
+{
+	struct cov_config_buffer;
+	cov_config_buffer.COV = calculate_cov(voltage_threshold);
+	cov_config_buffer.DISABLE = disable;
+	if(writereg((uint8_t) device.address_control.ADDR, COV_CONFIG_REG, 
+				(uint8_t) cov_config_buffer) != OK){
+		return SPI_TRANSMISSION_ERROR;
+	}
+	device->cov_config = cov_config_buffer;
 	return OK;
 }

@@ -277,7 +277,7 @@
  *	Default value: 0b00000000 0x00
  *	Type: R/W - GROUP 3
  */
-#define CONFIG_COV_REG			(0x42)
+#define COV_CONFIG_REG			(0x42)
 
 /** 
  * BQ76PL536A COVT Config Configuration address 
@@ -358,6 +358,13 @@
  * broadcast address
  */
 #define BROADCAST_ADDRESS		(0x3f)
+
+/**
+ * COV predefined values
+ */
+#define MIN_COV_VALUE			2.0f
+#define MAX_COV_VALUE			5.0f
+#define COV_LSB_VALUE			0.05f
 
 
 /**
@@ -602,7 +609,7 @@ struct io_config {
 };
 
 /**
- * @struct config_cov
+ * @struct cov_config 
  * @brief struct that represents the cov config register data
  */
 struct cov_config { 
