@@ -366,6 +366,10 @@
 #define MAX_COV_VALUE			5.0f
 #define COV_LSB_VALUE			0.05f
 
+#define MIN_CUV_VALUE			0.7f
+#define MAX_CUV_VALUE			3.3f
+#define CUV_LSB_VALUE			0.1f
+
 #define MAX_COVT_VALUE			3100
 #define COVT_LSB_VALUE			100
 

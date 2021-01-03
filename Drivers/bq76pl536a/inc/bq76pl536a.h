@@ -49,6 +49,7 @@ enum BQ76_Status {
 	IO_CONFIG_FAIL = -8,
 	COV_CONFIG_FAIL = -9,
 	COVT_CONFIG_FAIL = -10,
+	CUV_CONFIG_FAIL = -11,
 };
 
 struct BQ76_write_packet_format {
@@ -198,5 +199,14 @@ enum BQ76_status bq76_set_cov_config(struct BQ76 * device, uint8_t disable,
  */
 enum BQ76_status bq76_set_covt_config(struct BQ76 * device, uint8_t time_unit, 
 									  uint16_t delay); 
+
+/**
+ * @func bq76_set_cuv_config
+ * @brief sets a device's Cell undervoltage threshold value
+ * @params[in] device: BQ76 pointer referencing to the desired device to be
+ * 					   modified
+ */
+enum BQ76_status bq76_set_cuv_config(struct BQ76 * device, uint8_t disable,
+									 float32_t voltage_threshold);
 
 #endif 
