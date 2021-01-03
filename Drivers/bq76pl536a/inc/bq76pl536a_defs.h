@@ -366,6 +366,9 @@
 #define MAX_COV_VALUE			5.0f
 #define COV_LSB_VALUE			0.05f
 
+#define MAX_COVT_VALUE			3100
+#define COVT_LSB_VALUE			100
+
 
 /**
  * @struct device_status
