@@ -47,6 +47,7 @@ enum BQ76_Status {
 	CB_TIME_CONFIG_FAIL = -6,
 	FUNCTION_CONFIG_FAIL = -7,
 	IO_CONFIG_FAIL = -8,
+	COV_CONFIG_FAIL = -9,
 };
 
 struct BQ76_write_packet_format {
@@ -89,7 +90,8 @@ struct BQ76 {
 /**
  * @func bq76_init
  * @brief Initializes a bq76 struct
- * @params[in] device: pointer that points to a BQ76 struct
+ * @params[in] device: BQ76 pointer referencing to the desired device to be
+ * 					   initialized 
  * @return BQ76_status [OK|SPI_TRANSMISSION_ERROR]
  */
 enum BQ76_status bq76_init(struct BQ76 * device);
@@ -105,7 +107,7 @@ enum BQ76_status bq76_broadcast_reset();
  * @func bq76_reset
  * @brief sends a reset command to a specified device
  * @params[in] device: BQ76 pointer referencing to the desired device to be
- * 			   resetted
+ * 					   modified
  * @return BQ76_status [OK|SPI_TRANSMISSION_ERROR]
  */
 enum BQ76_status bq76_reset(struct BQ76 * device);
@@ -114,7 +116,7 @@ enum BQ76_status bq76_reset(struct BQ76 * device);
  * @func bq76_set_address
  * @brief sets a device's address and check if it was properly set
  * @params[in] device: BQ76 pointer referencing to the desired device to be
- * 			   resetted
+ * 					   modified
  * @params[in] new_address: uint8_t variable that holds the new address of the
  * 			   device
  * @return BQ76_status [OK|ADDRESS_CONFIG_FAIL|SPI_TRANSMISSION_ERROR]
@@ -125,7 +127,7 @@ enum BQ76_status bq76_set_address(struct BQ76 * device);
  * @func bq76_set_cb_time
  * @brief sets a device's balancing timeout
  * @params[in] device: BQ76 pointer referencing to the desired device to be
- * 			   resetted
+ * 					   modified
  * @params[in] mins_secs: uint8_t variable that holds a flag indicating if the
  * 			   time unit are minutes (true) or seconds (false)
  * @params[in] balancing_time: uint8_t variable holding the number of
@@ -140,7 +142,7 @@ enum BQ76_status bq76_set_cb_time(struct BQ76 * device,
  * @func bq76_set_function_config
  * @brief sets a device's function config register
  * @params[in] device: BQ76 pointer referencing to the desired device to be
- * 			   resetted
+ * 					   modified
  * @params[in] gpai_ref: uint8_t variable that holds a flag indicating if the
  * 			   GPAI reference is connected to the ADC bandgap or to V_REG50
  * @params[in] gpai_src: uint8_t variable that holds a flag indicating whether
@@ -157,7 +159,7 @@ enum BQ76_status bq76_set_function_config(struct BQ76 * device,
  * @func bq76_set_io_config
  * @brief sets a device's I/O config register
  * @params[in] device: BQ76 pointer referencing to the desired device to be
- * 			   resetted
+ * 					   modified
  * @params[in] crc_enable: uint8_t variable that enables or disables CRC
  * 			   calculation (0: ENABLED, 1: DISABLED)
  * @params[in] crc_assert_pin: uint8_t variable that enables and disabled
@@ -167,5 +169,31 @@ enum BQ76_status bq76_set_function_config(struct BQ76 * device,
  */
 enum BQ76_status bq76_set_io_config(struct BQ76 * device,
 									uint8_t crc_enable, uint8_t crc_assert_pin);
+
+/**
+ * @func bq76_set_cov_config
+ * @brief sets a device's Cell Overvoltage Threshold value
+ * @params[in] device: BQ76 pointer referencing to the desired device to be
+ * 			   resetted
+ * @params[in] disable: uint8_t variable that disables the cov function
+ * @params[in] voltage_threshold: float32_t that holds the voltage_threshold
+ * 			   value
+ *
+ */
+enum BQ76_status bq76_set_cov_config(struct BQ76 * device, uint8_t disable, 
+									 float32_t voltage_threshold);
+
+/**
+ * @func bq76_set_covt_config
+ * @brief sets a device's Cell Overvoltage Threshold value
+ * @params[in] device: BQ76 pointer referencing to the desired device to be
+ * 			   resetted
+ * @params[in] disable: uint8_t variable that disables the cov function
+ * @params[in] voltage_threshold: float32_t that holds the voltage_threshold
+ * 			   value
+ *
+ */
+enum BQ76_status bq76_set_cov_config(struct BQ76 * device, uint8_t disable, 
+									 float32_t voltage_threshold);
 
 #endif 
