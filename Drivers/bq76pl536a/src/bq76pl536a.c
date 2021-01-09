@@ -130,16 +130,17 @@ static struct BQ76_read_packet_format init_read_packet(uint8_t device_address,
 }
 
 /**
- * @func writereg
- * @brief Write a register of the BQ76PL536 device.
- * 		  The user of this library is responsible of defining this function. As
- * 		  an example, we have only defined functionality for STM32F407xx
+ * @func writespi
+ * @brief Sends a write command from the SPI interface to the the BQ76PL536 
+ * 		  device. The user of this library is responsible of defining this 
+ * 		  function. As an example, we have only defined functionality for 
+ * 		  STM32F407xx.
  * @params[in] spi_address: BQ76 device address
- * @params[in] reg: register address to write
- * @params[in] value: value to write
+ * @params[in] reg_address: register address to write
+ * @params[in] reg_data: data to write
  * @return BQ76_status [BQ76_OK|BQ76_SPI_TRANSMISSION_ERROR]
  */
-static enum BQ76_status writereg(uint8_t spi_address, uint8_t reg_address, 
+static enum BQ76_status writespi(uint8_t spi_address, uint8_t reg_address, 
 									  uint8_t reg_data)
 {
 	struct BQ76_write_packet_format packet = init_write_packet(spi_address, 
@@ -156,7 +157,32 @@ static enum BQ76_status writereg(uint8_t spi_address, uint8_t reg_address,
 }
 
 /**
- * @func readreg
+ * @func writereg
+ * @brief Write a register of the BQ76PL536 regardless to which group belongs
+ * 		  to, remember that according to the datasheet there are three kind of 
+ * 		  groups (Group 1, Group 2 and Group 3) where the first are read-only 
+ * 		  groups, the second read/write groups, and group 3 are read/write 
+ * 		  registers which they need a special write sequence 
+ * 		  (first write 0x35 to SHDW_CONTROL, and then immediately write to the 
+ * 		  desired register), any intervening write cancels the sequence
+ * @params[in] spi_address: spi_address of the device
+ * @params[in] reg_address: desired register to write
+ * @params[in] reg_data: data to write
+ */
+static enum BQ76_status writereg(uint8_t spi_address, uint8_t reg_address,
+						 		 uint8_t reg_data)
+{
+	enum BQ76_status write_status;
+	if(reg_address >= FUNCTION_CONFIG_REG && reg_address <= OTT_CONFIG_REG){
+		write_status = writespi(spi_address, SHADOW_CONTROL_REG, 
+								SHDW_CONTROL_ENABLE);
+	}
+	write_status = writespi(spi_address, reg_address, reg_data);
+	return write_status;
+}
+
+/**
+ * @func readspi
  * @brief Write a register of the BQ76PL536 device.
  * 		  The user of this library is responsible of defining this function. As
  * 		  an example, we have only defined functionality for STM32F407xx.
@@ -168,7 +194,7 @@ static enum BQ76_status writereg(uint8_t spi_address, uint8_t reg_address,
  * @params[in] value: value to write
  * @return BQ76_status [BQ76_OK|BQ76_SPI_TRANSMISSION_ERROR]
  */
-static enum BQ76_status readreg(uint8_t spi_address, uint8_t reg_address,
+static enum BQ76_status readspi(uint8_t spi_address, uint8_t reg_address,
 								uint8_t read_length, uint8_t * data)
 {
 #if defined(USE_HAL_DRIVER) && defined(STM32F407xx)
@@ -282,7 +308,7 @@ enum BQ76_status bq76_set_address(struct BQ76 * device, uint8_t address)
 	// Check if the address has been correctly set
 	struct address_control address_buffer;
 	// 1 - read new address
-	if(readreg(address, ADDRESS_CONTROL_REG, 1, 
+	if(readspi(address, ADDRESS_CONTROL_REG, 1, 
 			(uint8_t *) &address_buffer) != BQ76_OK){
 		return BQ76_SPI_TRANSMISSION_ERROR;
 	}

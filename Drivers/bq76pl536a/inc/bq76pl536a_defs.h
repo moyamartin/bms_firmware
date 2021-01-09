@@ -381,6 +381,8 @@
 #define OTT_LSB_VALUE			10
 #define MAX_OTT_DELAY			2550
 
+#define SHDW_CONTROL_ENABLE 	0x27
+
 /**
  * @struct device_status
  * @brief struct that represents the device status register data
