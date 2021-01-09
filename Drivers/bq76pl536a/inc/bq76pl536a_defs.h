@@ -13,6 +13,8 @@
 #ifndef __BQ76PL536A_DEFS_H_
 #define __BQ76PL536A_DEFS_H_
 
+#include <stdint.h>
+
 /** 
  * BQ76PL536A Status Register address 
  *	Default value: 0b00000000 0x00
@@ -158,7 +160,7 @@
  *	Default value: 0b00001000 0x08
  *	Type: R/W - GROUP 2
  */
-#define ALERT_STATUS_REG		(0x21)
+#define FAULT_STATUS_REG		(0x21)
 
 /** 
  * BQ76PL536A COV Fault Status Register address 
@@ -375,8 +377,9 @@
 
 #define MAX_CAL_TEMP			90.0f
 #define MIN_CAL_TEMP			40.0f
-#define CAL_TEMP_LSB			5f
+#define CAL_TEMP_LSB			5.0f
 #define OTT_LSB_VALUE			10
+#define MAX_OTT_DELAY			2550
 
 /**
  * @struct device_status
@@ -531,22 +534,6 @@ struct io_control {
 	uint8_t AUX:1;		/**< Controls the state of the AUX pin */
 };
 
-
-/**
- * @struct io_control
- * @brief struct that represents I/O control register data
- */
-struct io_control 
-{
-	uint8_t TS1:1;		/**< Controls the connection to TS2 */
-	uint8_t TS2:2;		/**< Controls the connection to TS2 */
-	uint8_t SLEEP:1;	/**< Place the device in sleep mode */
-	uint8_t RESERVED:2;	/**< Reserved */
-	uint8_t GPIO_IN:1;	/**< Represents the input state of GPIO pin */
-	uint8_t GPIO_OUT:1;	/**< Represents the output state of GPIO pin */
-	uint8_t AUX:1;		/**< Controls the state of the AUX pin */
-};
-
 /**
  * @struct cb_ctrl
  * @brief struct that represents the cell balance output state control register
@@ -591,11 +578,11 @@ struct address_control {
  * @brief struct that represents the function config register data
  */
 struct function_config { 
-	uint8_t RESERVED:2;
+	uint8_t RESERVED_1:2;
 	uint8_t CN:2;			/**< Configures the number of series cells used */
 	uint8_t GPAI_SRC:1;		/**< Multiplex GPAI SRC to VBAT or output */
 	uint8_t GPAI_REF:1;		/**< Sets GPAI ADC reference */
-	uint8_t RESERVED:2;
+	uint8_t RESERVED_2:2;
 };
 
 /**
@@ -637,7 +624,7 @@ struct vth_config {
 struct delay_config { 
 	uint8_t DELAY:5;	/**< Delay time */
 	uint8_t RESERVED:2;	/**< RESERVED */		
-	uint8_t DISABLE:1;	/**< Enable/Disable the COVT/CUVT function */
+	uint8_t US_MS:1;	/**< Enable/Disable the COVT/CUVT function */
 };
 
 /**
@@ -647,6 +634,6 @@ struct delay_config {
 struct ot_config {
 	uint8_t OT1:4;
 	uint8_t OT2:4;
-}
+};
 
 #endif /* bq76pl536a_defs.h */
