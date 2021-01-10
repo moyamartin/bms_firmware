@@ -147,11 +147,13 @@ static enum BQ76_status writespi(uint8_t spi_address, uint8_t reg_address,
 															   reg_address,
 															   reg_data);	
 #if defined(USE_HAL_DRIVER) && defined(STM32F407xx)
+	HAL_GPIO_TogglePin(BQ76_CS_GPIO, BQ76_CS_PIN);
 	if(HAL_SPI_Transmit(&BQ76_INTERFACE, (uint8_t *) &packet, 
 					 BQ76_TX_BUFF_SIZE, BQ76_TIMEOUT) != HAL_OK)
 	{
 		return BQ76_SPI_TRANSMISSION_ERROR;
 	}
+	HAL_GPIO_TogglePin(BQ76_CS_GPIO, BQ76_CS_PIN);
 	return BQ76_OK;
 #endif
 }
