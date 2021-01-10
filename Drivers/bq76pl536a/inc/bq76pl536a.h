@@ -31,6 +31,8 @@
 	extern SPI_HandleTypeDef hspi1;
 	#define BQ76_INTERFACE hspi1 
 	#define BQ76_TIMEOUT 1000
+	#define BQ76_CS_GPIO GPIOA
+	#define BQ76_CS_PIN GPIO_PIN_4
 #elif defined (__AVR__)
 	// AVR devices support
 #endif

@@ -488,7 +488,7 @@ struct presult_b {
  */
 struct adc_control{
 	uint8_t CELL_SEL:3;	/**< Selects the series cells for voltage measurement */
-	uint8_t GPAI:1;		/**< Enables/Disables GPAI input to be measured */
+	uint8_t GPAI:1;		/**< Enables(1)/Disables(0) GPAI input to be measured */
 	uint8_t TS:2;		/**< Selects temp sensor input to be meeasured */
 	uint8_t ADC_ON:1;	/**< forces ADC subsystem ON */
 	uint8_t RESERVED:1;	/**< Reserved */
