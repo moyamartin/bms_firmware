@@ -1,4 +1,3 @@
-
 /******************************************************************************
  *
  * @file	bq76pl536a.h
@@ -11,6 +10,7 @@
  * @copyright GPL license, all text here must be included in any redistribution
  *****************************************************************************/
 #ifndef _BQ76PL536A_H_
+#define _BQ76PL536A_H_
 
 #include "bq76pl536a_defs.h"
 
@@ -53,18 +53,21 @@ enum BQ76_status {
 	BQ76_CUVT_CONFIG_FAIL = -12,
 	BQ76_OT_CONFIG_FAIL = -13,
 	BQ76_OTT_CONFIG_FAIL = -14,
+    BQ76_CRC_MISMATCH = -15,
 };
 
 struct BQ76_write_packet_format {
 	uint8_t device_address;
 	uint8_t reg_address;
 	uint8_t reg_data;
+    uint8_t crc;
 };
 
 struct BQ76_read_packet_format {
 	uint8_t device_address;
 	uint8_t start_reg_address;
 	uint8_t read_length;
+    uint8_t buffer[16];
 };
 
 #define BQ76_TX_BUFF_SIZE sizeof(struct BQ76_write_packet_format)
