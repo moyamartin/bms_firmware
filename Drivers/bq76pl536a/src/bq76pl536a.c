@@ -1,4 +1,5 @@
 #include "bq76pl536a.h"
+#include "crc.h"
 
 /**
  * @func calculate_ott
@@ -106,6 +107,9 @@ static struct BQ76_write_packet_format init_write_packet(uint8_t device_address,
 	packet.device_address = device_address;
 	packet.reg_address = reg_address;
 	packet.reg_data = reg_data;
+    packet.crc = calculate_crc((uint8_t *) &packet, 
+                               sizeof(struct BQ76_write_packet_format) - 1,
+                               CRC_SMBUS_LUT);
 	return packet;
 }
 
@@ -206,14 +210,18 @@ static enum BQ76_status readspi(uint8_t spi_address, uint8_t reg_address,
 	HAL_GPIO_TogglePin(BQ76_CS_GPIO, BQ76_CS_PIN);
 	if(HAL_SPI_Transmit(&BQ76_INTERFACE, (uint8_t *) &packet, BQ76_TX_BUFF_SIZE,
 						BQ76_TIMEOUT) != HAL_OK){
-
 		return BQ76_SPI_TRANSMISSION_ERROR;
 	}
-	if(HAL_SPI_Receive(&BQ76_INTERFACE, data, read_length, 
+	if(HAL_SPI_Receive(&BQ76_INTERFACE, packet.buffer, read_length + 1, 
 					   BQ76_TIMEOUT) != HAL_OK){
 		return BQ76_SPI_TRANSMISSION_ERROR;
 	}
+    if(calculate_crc((uint8_t *) &packet, BQ76_RX_BUFF_LENGTH(read_length), 
+                     CRC_SMBUS_LUT) != packet.buffer[read_length]){
+        return BQ76_CRC_MISMATCH;
+    }
     HAL_GPIO_TogglePin(BQ76_CS_GPIO, BQ76_CS_PIN);
+    memcpy(data, packet.buffer, read_length);
 	return BQ76_OK;
 #endif
 }

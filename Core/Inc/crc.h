@@ -12,9 +12,10 @@
 #ifndef _CRC_H_
 #define _CRC_H_
 
+#include <stddef.h>
 #include <stdint.h>
 
-static const uint8_t CRC_SMBUS_LUT[188] = {
+static const uint8_t CRC_SMBUS_LUT[256] = {
     0x00, 0x07, 0x0E, 0x09, 0x1C, 0x1B, 0x12, 0x15, 0x38, 0x3F, 0x36, 0x31, 
     0x24, 0x23, 0x2A, 0x2D, 0x70, 0x77, 0x7E, 0x79, 0x6C, 0x6B, 0x62, 0x65,
     0x48, 0x4F, 0x46, 0x41, 0x54, 0x53, 0x5A, 0x5D, 0xE0, 0xE7, 0xEE, 0xE9,
@@ -43,8 +44,14 @@ static const uint8_t CRC_SMBUS_LUT[188] = {
  * @func  calculate_crc
  * @brief calculates the crc value of a buffer array given the desired algorithm
  *        LUT
+ * @params[in] buffer: uint8_t array that holds the array which the user wants
+ *             to calculate the CRC
+ * @params[in] buffer_length
+ * @params[in] crc_lut: uint8_t array that holds the LUT for a specific
+ * algorithm
+ * @returns uint8_t variable containing the result of the CRC algorithm
  */
 uint8_t calculate_crc(uint8_t * buffer, size_t buffer_length, 
-                      uint8_t * crc_lut);
+                      const uint8_t * crc_lut);
 
 #endif
