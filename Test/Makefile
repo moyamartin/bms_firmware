@@ -26,7 +26,9 @@ SRC_FILES=$(PROJECT_DIR)/Core/Src/find.c \
 		  $(PROJECT_DIR)/Drivers/CMSIS/DSP/Source/MatrixFunctions/arm_mat_inverse_f32.c \
 		  $(PROJECT_DIR)/Core/Src/kalman.c \
 		  $(PROJECT_DIR)/Core/Src/auxiliary_mat.c \
-		  $(PROJECT_DIR)/Core/Src/battery_model.c
+		  $(PROJECT_DIR)/Core/Src/battery_model.c \
+		  $(PROJECT_DIR)/Core/Src/crc.c
+
 SRC_DIRS=
 
 # project header files path
