@@ -104,7 +104,7 @@ static struct BQ76_write_packet_format init_write_packet(uint8_t device_address,
 														 uint8_t reg_data)
 {
 	struct BQ76_write_packet_format packet;
-	packet.device_address = device_address;
+	packet.device_address = (device_address << 1) | 0x01;
 	packet.reg_address = reg_address;
 	packet.reg_data = reg_data;
     packet.crc = calculate_crc((uint8_t *) &packet, 
@@ -127,7 +127,7 @@ static struct BQ76_read_packet_format init_read_packet(uint8_t device_address,
 													   uint8_t read_length)
 {
 	struct BQ76_read_packet_format packet;
-	packet.device_address = device_address;
+	packet.device_address = device_address << 1;
 	packet.start_reg_address = start_reg_addr;
 	packet.read_length = read_length;
 	return packet;
@@ -153,7 +153,7 @@ static enum BQ76_status writespi(uint8_t spi_address, uint8_t reg_address,
 #if defined(USE_HAL_DRIVER) && defined(STM32F407xx)
 	HAL_GPIO_TogglePin(BQ76_CS_GPIO, BQ76_CS_PIN);
 	if(HAL_SPI_Transmit(&BQ76_INTERFACE, (uint8_t *) &packet, 
-					 BQ76_TX_BUFF_SIZE, BQ76_TIMEOUT) != HAL_OK)
+					 	BQ76_TX_BUFF_SIZE, BQ76_TIMEOUT) != HAL_OK)
 	{
 		return BQ76_SPI_TRANSMISSION_ERROR;
 	}
@@ -166,7 +166,7 @@ static enum BQ76_status writespi(uint8_t spi_address, uint8_t reg_address,
  * @func writereg
  * @brief Write a register of the BQ76PL536 regardless to which group belongs
  * 		  to, remember that according to the datasheet there are three kind of 
- * 		  groups (Group 1, Group 2 and Group 3) where the first are read-only 
+ * 		  groups (Group 1, Group 2 and Group 3) where the first are eead-only 
  * 		  groups, the second read/write groups, and group 3 are read/write 
  * 		  registers which they need a special write sequence 
  * 		  (first write 0x35 to SHDW_CONTROL, and then immediately write to the 
@@ -208,18 +208,19 @@ static enum BQ76_status readspi(uint8_t spi_address, uint8_t reg_address,
 															 reg_address,
 															 read_length);
 	HAL_GPIO_TogglePin(BQ76_CS_GPIO, BQ76_CS_PIN);
-	if(HAL_SPI_Transmit(&BQ76_INTERFACE, (uint8_t *) &packet, BQ76_TX_BUFF_SIZE,
-						BQ76_TIMEOUT) != HAL_OK){
+	if(HAL_SPI_Transmit(&BQ76_INTERFACE, (uint8_t *) &packet, 
+						BQ76_TX_BUFF_SIZE - 1, BQ76_TIMEOUT) != HAL_OK){
 		return BQ76_SPI_TRANSMISSION_ERROR;
 	}
 	if(HAL_SPI_Receive(&BQ76_INTERFACE, packet.buffer, read_length + 1, 
 					   BQ76_TIMEOUT) != HAL_OK){
 		return BQ76_SPI_TRANSMISSION_ERROR;
 	}
+	/*
     if(calculate_crc((uint8_t *) &packet, BQ76_RX_BUFF_LENGTH(read_length), 
                      CRC_SMBUS_LUT) != packet.buffer[read_length]){
         return BQ76_CRC_MISMATCH;
-    }
+    }*/
     HAL_GPIO_TogglePin(BQ76_CS_GPIO, BQ76_CS_PIN);
     memcpy(data, packet.buffer, read_length);
 	return BQ76_OK;
@@ -314,6 +315,8 @@ enum BQ76_status bq76_reset(struct BQ76 * device)
 enum BQ76_status bq76_set_address(struct BQ76 * device, uint8_t address)
 {
 	// Write new address to device
+	// Here we are assuming that the device is previously reset, if you want to
+	// modify the address call bq76_change_address
 	if(writereg(device->address_control.ADDR, ADDRESS_CONTROL_REG, 
 				address) != BQ76_OK){
 		return BQ76_SPI_TRANSMISSION_ERROR;
