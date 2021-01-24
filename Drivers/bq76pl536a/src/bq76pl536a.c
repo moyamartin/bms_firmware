@@ -213,15 +213,14 @@ static enum BQ76_status readspi(uint8_t spi_address, uint8_t reg_address,
 		return BQ76_SPI_TRANSMISSION_ERROR;
 	}
 	if(HAL_SPI_Receive(&BQ76_INTERFACE, packet.buffer, read_length + 1, 
-					   BQ76_TIMEOUT) != HAL_OK){
+				   BQ76_TIMEOUT) != HAL_OK){
 		return BQ76_SPI_TRANSMISSION_ERROR;
 	}
-	/*
-    if(calculate_crc((uint8_t *) &packet, BQ76_RX_BUFF_LENGTH(read_length), 
+    HAL_GPIO_TogglePin(BQ76_CS_GPIO, BQ76_CS_PIN);
+    if(calculate_crc((uint8_t *) &packet, BQ76_RX_BUFF_LENGTH(read_length) - 1, 
                      CRC_SMBUS_LUT) != packet.buffer[read_length]){
         return BQ76_CRC_MISMATCH;
-    }*/
-    HAL_GPIO_TogglePin(BQ76_CS_GPIO, BQ76_CS_PIN);
+    }
     memcpy(data, packet.buffer, read_length);
 	return BQ76_OK;
 #endif
@@ -317,23 +316,19 @@ enum BQ76_status bq76_set_address(struct BQ76 * device, uint8_t address)
 	// Write new address to device
 	// Here we are assuming that the device is previously reset, if you want to
 	// modify the address call bq76_change_address
-	if(writereg(device->address_control.ADDR, ADDRESS_CONTROL_REG, 
+	if(writereg(0x00, ADDRESS_CONTROL_REG, 
 				address) != BQ76_OK){
 		return BQ76_SPI_TRANSMISSION_ERROR;
 	}
-	// Check if the address has been correctly set
-	struct address_control address_buffer;
+    
+    uint8_t address_buffer;
 	// 1 - read new address
 	if(readspi(address, ADDRESS_CONTROL_REG, 1, 
-			(uint8_t *) &address_buffer) != BQ76_OK){
+			   &address_buffer) != BQ76_OK){
 		return BQ76_SPI_TRANSMISSION_ERROR;
 	}
-	// 2 - check if the ADDR_RQST is not set or the ADDR[n] is different from 
-	// the new address
-	if(!address_buffer.ADDR_RQST || 
-			(uint8_t) address_buffer.ADDR != address){
-		return BQ76_ADDRESS_CONFIG_FAIL;
-	}
+    device->address_control.ADDR_RQST = address_buffer >> 7;
+    device->address_control.ADDR = address_buffer & 0x01F;
 	return BQ76_OK;
 }
 
@@ -344,10 +339,20 @@ enum BQ76_status bq76_set_adc_control(struct BQ76 * device)
 				   			   (device->adc_control.TS << 4)		| 
 				   			   (device->adc_control.GPAI << 3)		| 
 				   			   device->adc_control.CELL_SEL;
+    // write address control 
 	if(writereg((uint8_t) device->address_control.ADDR, ADC_CONTROL_REG, 
 				adc_control_data) != BQ76_OK){
 		return BQ76_SPI_TRANSMISSION_ERROR;
 	}
+
+
+    // validate writteng adc value
+    uint8_t adc_control_data_buffer;
+    if(readspi((uint8_t) device->address_control.ADDR, ADC_CONTROL_REG, 1, 
+               &adc_control_data_buffer) != BQ76_OK){
+        return BQ76_SPI_TRANSMISSION_ERROR;
+    }
+    
 	return BQ76_OK;
 }
 
@@ -355,10 +360,12 @@ enum BQ76_status bq76_set_cb_time(struct BQ76 * device, uint8_t balancing_time)
 {
 	device->cb_time.CBT = (balancing_time > 63) ? 63 : balancing_time;
 	uint8_t cb_time_data = device->cb_time.CBCT << 7 | device->cb_time.CBT;
+
 	if(writereg((uint8_t) device->address_control.ADDR, CB_TIME_REG, 
 				cb_time_data) != BQ76_OK){
 		return BQ76_SPI_TRANSMISSION_ERROR;
 	}
+    
 	return BQ76_OK;
 }
 
@@ -460,4 +467,40 @@ enum BQ76_status bq76_set_ott_config(struct BQ76 * device,
 		return BQ76_SPI_TRANSMISSION_ERROR;
 	}
 	return BQ76_OK;
+}
+
+enum BQ76_status bq76_read_n_cells(struct BQ76 * device)
+{
+    // the amount of cells to be read from a device is automatically set by the
+    // adc_control register
+    uint8_t n_cells = device->adc_control.CELL_SEL + 1;
+    uint16_t raw_cell_voltage[n_cells];
+    if(readspi((uint8_t) device->address_control.ADDR, VCELL1_LOW_REG, 
+               2*n_cells, (uint8_t *) &raw_cell_voltage) != BQ76_OK){
+        return BQ76_SPI_TRANSMISSION_ERROR;
+    }
+
+    for(int i = 0; int < n_cells; ++i){
+        v_cells[i] = raw_cell_voltage[i]*6250/16383;
+    }
+    
+    return BQ76_OK;
+}
+
+enum BQ76_status bq76_swrqst_adc_convert(struct BQ76 * device)
+{
+    if(writereg((uint8_t) device->address_control.ADDR, ADC_CONVERT_REG, 
+                0x01) != BQ76_OK){
+        return BQ76_SPI_TRANSMISSION_ERROR;
+    }
+    return BQ76_OK;
+}
+
+enum BQ76_status bq76_brdcst_adc_convert()
+{
+    if(writereg(BROADCAST_ADDRESS, ADC_CONVERT_REG, 
+                0x01) != BQ76_OK){
+        return BQ76_SPI_TRANSMISSION_ERROR;
+    }
+    return BQ76_OK;
 }

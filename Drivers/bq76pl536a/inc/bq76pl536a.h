@@ -13,6 +13,7 @@
 #define _BQ76PL536A_H_
 
 #include "bq76pl536a_defs.h"
+#include "arm_math.h"
 
 #if defined(USE_HAL_DRIVER) && defined(STM32F407xx)
 	// Support for stm32f4xx devices
@@ -31,8 +32,11 @@
 	extern SPI_HandleTypeDef hspi1;
 	#define BQ76_INTERFACE hspi1 
 	#define BQ76_TIMEOUT 1000
-	#define BQ76_CS_GPIO GPIOA
-	#define BQ76_CS_PIN GPIO_PIN_4
+
+    // STM32F407xx handles the SPI via SPI_NSS_SOFT, change the following if
+    // it's handled by hw
+	#define BQ76_CS_GPIO BQ76_CS_GPIO_Port
+	#define BQ76_CS_PIN BQ76_CS_Pin
 #elif defined (__AVR__)
 	// AVR devices support
 #endif
@@ -76,7 +80,6 @@ struct BQ76_read_packet_format {
 
 struct BQ76 {
 	struct adc_control adc_control;
-	struct adc_convert adc_convert;
 	struct address_control address_control;
 	struct alert_status alert_status;
 	struct cb_ctrl cb_ctrl;
@@ -96,6 +99,7 @@ struct BQ76 {
 	struct vth_config cuv_config;
 	uint8_t ott_config;
 	uint8_t user_register[4];
+    float32_t v_cells[6];
 };
 
 /**
@@ -234,6 +238,7 @@ enum BQ76_status bq76_set_cuvt_config(struct BQ76 * device, uint16_t delay);
  * 			   modified
  * @params[in] ot1: float32_t value that sets the temp sensor 1 threshold value
  * @params[in] ot2: float32_t value that sets the temp sensor 2 threshold value
+ * @return BQ76_status indicating if the process failed or not
  */
 enum BQ76_status bq76_set_ot_config(struct BQ76 * device, float32_t ot1, 
 									float32_t ot2);
@@ -246,7 +251,41 @@ enum BQ76_status bq76_set_ot_config(struct BQ76 * device, float32_t ot1,
  * 					   modified
  * @params[in] delay_time: uint16_t that holds the amount of time until the
  * 			   overtemperature is triggered
+ * @return BQ76_status indicating if the process failed or not
  */
 enum BQ76_status bq76_set_ott_config(struct BQ76 * device, uint16_t delay_time);
+
+/**
+ * @func  bq76_read_n_cells()
+ * @brief reads the voltage value of n cells, this function always takes as a
+ * starting point the cell 1 and this function should always be called when DRDY
+ * pin from the chip is asserted
+ * @params[in] device: BQ76 pointer referencing to the desired device to be
+ *             modified
+ * @params[in] n_cells: amount of cells to be read by the user, the result is
+ * stored in BQ76->v_cells
+ * @return BQ76_status indicating if the process failed or not
+ * @see BQ76
+ */
+enum BQ76_status bq76_read_v_cells(struct BQ76 * device, uint8_t n_cells);
+
+/**
+ * @func bq76_rqst_adc_convert
+ * @brief Request and ADC conversion by writing a 1 to the ADC_CONVERT register
+ *        This bit starts a conversion, using the settings programmed into the
+ *        adc_control register
+ * @params[in] device: BQ76 pointer referencing to the desired device to be
+ *             modified
+ * @return BQ76_status indicating if the process failed or not
+ */
+enum BQ76_status bq76_swrqst_adc_convert(struct BQ76 * device):
+
+/**
+ * @func bq76_rqst_adc_convert
+ * @brief Request and ADC conversion by writing a 1 to the ADC_CONVERT register
+ *        to all the connected devices
+ * @return BQ76_status indicating if the process failed or not
+ */
+enum BQ76_status bq76_bdcst_adc_convert();
 
 #endif /* bq76pl536a.h */

@@ -70,6 +70,14 @@ void Error_Handler(void);
 #define PDM_OUT_GPIO_Port GPIOC
 #define BQ76_CS_Pin GPIO_PIN_4
 #define BQ76_CS_GPIO_Port GPIOA
+#define BQ76_FAULT_Pin GPIO_PIN_4
+#define BQ76_FAULT_GPIO_Port GPIOC
+#define BQ76_ALERT_Pin GPIO_PIN_5
+#define BQ76_ALERT_GPIO_Port GPIOC
+#define BQ76_DRDY_Pin GPIO_PIN_0
+#define BQ76_DRDY_GPIO_Port GPIOB
+#define BQ76_CONV_Pin GPIO_PIN_1
+#define BQ76_CONV_GPIO_Port GPIOB
 #define BOOT1_Pin GPIO_PIN_2
 #define BOOT1_GPIO_Port GPIOB
 #define SWDIO_Pin GPIO_PIN_13

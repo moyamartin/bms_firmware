@@ -556,16 +556,6 @@ struct cb_time {
 };
 
 /**
- * @struct adc_convert
- * @brief struct that represents the ADC convert register data
- */
-struct adc_convert { 
-	uint8_t CONV:1;		/**< This bit starts a conversion */
-	uint8_t RESERVED:7; /**< Reserved */
-	uint8_t CBCT:1;		/**< Controls minutes/seconds counting resolution */
-};
-
-/**
  * @struct address_ctrl
  * @brief struct that represents the address control register data
  */
