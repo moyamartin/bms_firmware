@@ -88,6 +88,7 @@ struct BQ76 {
 	struct delay_config covt_config;
 	struct delay_config cuvt_config;
 	struct device_status device_status;
+    struct fault_status fault_status;
 	struct function_config function_config;
 	struct io_config io_config;
 	struct io_control io_control;
