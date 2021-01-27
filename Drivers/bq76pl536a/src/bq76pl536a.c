@@ -469,19 +469,21 @@ enum BQ76_status bq76_set_ott_config(struct BQ76 * device,
 	return BQ76_OK;
 }
 
-enum BQ76_status bq76_read_n_cells(struct BQ76 * device)
+enum BQ76_status bq76_read_cells(struct BQ76 * device)
 {
     // the amount of cells to be read from a device is automatically set by the
     // adc_control register
     uint8_t n_cells = device->adc_control.CELL_SEL + 1;
-    uint16_t raw_cell_voltage[n_cells];
+    uint8_t raw_cell_voltage[n_cells*2];
     if(readspi((uint8_t) device->address_control.ADDR, VCELL1_LOW_REG, 
-               2*n_cells, (uint8_t *) &raw_cell_voltage) != BQ76_OK){
+               2*n_cells, raw_cell_voltage) != BQ76_OK){
         return BQ76_SPI_TRANSMISSION_ERROR;
     }
-
-    for(int i = 0; int < n_cells; ++i){
-        v_cells[i] = raw_cell_voltage[i]*6250/16383;
+    
+    for(int i = 0; i < n_cells; ++i){
+        uint16_t voltage_buffer = raw_cell_voltage[i*2] << 8 | 
+            raw_cell_voltage[2*i + 1];
+        device->v_cells[i] = ((float32_t) voltage_buffer*6250.0f)/16383.0f;
     }
     
     return BQ76_OK;

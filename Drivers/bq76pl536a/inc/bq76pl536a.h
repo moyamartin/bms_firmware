@@ -13,7 +13,6 @@
 #define _BQ76PL536A_H_
 
 #include "bq76pl536a_defs.h"
-#include "arm_math.h"
 
 #if defined(USE_HAL_DRIVER) && defined(STM32F407xx)
 	// Support for stm32f4xx devices
@@ -256,7 +255,7 @@ enum BQ76_status bq76_set_ot_config(struct BQ76 * device, float32_t ot1,
 enum BQ76_status bq76_set_ott_config(struct BQ76 * device, uint16_t delay_time);
 
 /**
- * @func  bq76_read_n_cells()
+ * @func  bq76_read_cells()
  * @brief reads the voltage value of n cells, this function always takes as a
  * starting point the cell 1 and this function should always be called when DRDY
  * pin from the chip is asserted
@@ -267,7 +266,7 @@ enum BQ76_status bq76_set_ott_config(struct BQ76 * device, uint16_t delay_time);
  * @return BQ76_status indicating if the process failed or not
  * @see BQ76
  */
-enum BQ76_status bq76_read_v_cells(struct BQ76 * device, uint8_t n_cells);
+enum BQ76_status bq76_read_cells(struct BQ76 * device);
 
 /**
  * @func bq76_rqst_adc_convert
