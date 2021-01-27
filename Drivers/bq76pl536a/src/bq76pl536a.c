@@ -506,3 +506,21 @@ enum BQ76_status bq76_brdcst_adc_convert()
     }
     return BQ76_OK;
 }
+
+enum BQ76_status bq76_read_alert_reg(struct BQ76 * device)
+{
+    if(readreg((uint8_t) device->address_control.ADDR, ALERT_STATUS_REG, 1, 
+               (uint8_t) device->alert_status) != BQ76_OK){
+        return BQ76_SPI_TRANSMISSION_ERROR;
+    }
+    return BQ76_OK;
+}
+
+enum BQ76_status bq76_read_fault_reg(struct BQ76 * device)
+{
+    if(readreg((uint8_t) device->address_control.ADDR, FAULT_STATUS_REG, 1,
+               (uint8_t) device->fault_status) != BQ76_OK){
+        return BQ76_SPI_TRANSMISSION_ERROR;
+    }
+    return BQ76_OK;
+}

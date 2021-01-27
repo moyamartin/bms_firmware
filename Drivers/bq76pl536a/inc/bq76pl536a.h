@@ -288,4 +288,22 @@ enum BQ76_status bq76_swrqst_adc_convert(struct BQ76 * device):
  */
 enum BQ76_status bq76_bdcst_adc_convert();
 
+/**
+ * @func  bq76_read_alert_reg
+ * @brief Reads the ALERT_STATUS register and updates the alert_status variable
+ * @param[in] device: BQ76 pointer referencing to the desired device to be
+ *            modified
+ * @return BQ76_status indicating if the process failed or not
+ */
+enum BQ76_status bq76_read_alert_reg(struct BQ76 * device);
+
+/**
+ * @func  bq76_read_fault_reg
+ * @brief Reads the FAULT_STATUS register and updates the fault_status variable
+ * @param[in] device: BQ76 pointer referencing to the desired device to be
+ *            modified
+ * @return BQ76_status indicating if the process failed or not
+ */
+enum BQ76_status bq76_read_fault_reg(struct BQ76 * device);
+
 #endif /* bq76pl536a.h */
