@@ -18,6 +18,7 @@
 	// Support for stm32f4xx devices
 	#include "arm_math.h"
 	#include "stm32f4xx_hal.h"
+    #include "main.h"
 
 	/* 
 	 * All the instances of these drivers share only one SPI bus, that we asume
@@ -278,7 +279,7 @@ enum BQ76_status bq76_read_cells(struct BQ76 * device);
  *             modified
  * @return BQ76_status indicating if the process failed or not
  */
-enum BQ76_status bq76_swrqst_adc_convert(struct BQ76 * device):
+enum BQ76_status bq76_swrqst_adc_convert(struct BQ76 * device);
 
 /**
  * @func bq76_rqst_adc_convert
@@ -305,5 +306,55 @@ enum BQ76_status bq76_read_alert_reg(struct BQ76 * device);
  * @return BQ76_status indicating if the process failed or not
  */
 enum BQ76_status bq76_read_fault_reg(struct BQ76 * device);
+
+/**
+ * @func bq76_clear_fault_flags
+ * @brief clear the flags from the fault register by writing a one to them
+ * @param[in] device: BQ76 pointer referencing to the desired device to be
+ *                    modified
+ * @return BQ76_status indicating if the process failed or not
+ */
+enum BQ76_status bq76_clear_fault_reg(struct BQ76 * device, uint8_t flags);
+
+/**
+ * @func bq76_clear_alert_flags
+ * @brief clear the flags from the alert register by writing a one to them
+ * @param[in] device: BQ76 pointer referencing to the desired device to be
+ *                    modified
+ * @return BQ76_status indicating if the process failed or not
+ */
+enum BQ76_status bq76_clear_alert_reg(struct BQ76 * device, uint8_t flags);
+
+/**
+ * @func bq76_read_cov_faut_reg
+ * @brief Reads the cov register to see which cell is the faulty one
+ * @param[in] device: BQ76 pointer referencing to the desired device to be
+ *            modified
+ * @return BQ76_status indicating if the operation failed or not
+ */
+enum BQ76_status bq76_read_cov_fault_reg(struct BQ76 * device);
+
+
+/**
+ * @func bq76_read_cuv_fault_reg
+ * @brief Reads the cuv register to see which cell is the faulty one
+ * @params[in] device: BQ76 pointer referencing to the desired device to be
+ *             modified
+ * @return BQ76_status indiciating if the operation failed or not
+ */
+enum BQ76_status bq76_read_cuv_fault_reg(struct BQ76 * device);
+
+/**
+ * @func bq76_set_balancing_output
+ * @brief Turns on the balancing transistors given a uint8_t value indicating
+ *        which transistors should be turned on and which transistors should 
+ *        be turned off
+ * @params[in] device: BQ76 pointer referencing to the desired device to be
+ *             modified
+ * @params[in] uint8_t flag indicating which transistors to turn off and on
+ * @return BQ76_status indicating if the operation failed or not
+ */
+enum BQ76_status bq76_set_balancing_output(struct BQ76 * device, 
+                                           uint8_t transistors);
 
 #endif /* bq76pl536a.h */

@@ -145,16 +145,23 @@ static struct BQ76_read_packet_format init_read_packet(uint8_t device_address,
  * @return BQ76_status [BQ76_OK|BQ76_SPI_TRANSMISSION_ERROR]
  */
 static enum BQ76_status writespi(uint8_t spi_address, uint8_t reg_address, 
-									  uint8_t reg_data)
+							     uint8_t reg_data)
 {
+    if(reg_address >= FUNCTION_CONFIG_REG && reg_address <= USER4_REG){
+        if(writespi(spi_address, SHADOW_CONTROL_REG, ENABLE_REG_3) != BQ76_OK){
+            return BQ76_SPI_TRANSMISSION_ERROR;
+        }
+    }
 	struct BQ76_write_packet_format packet = init_write_packet(spi_address, 
 															   reg_address,
 															   reg_data);	
+    while(HAL_SPI_GetState(&BQ76_INTERFACE) != HAL_SPI_STATE_READY);
 #if defined(USE_HAL_DRIVER) && defined(STM32F407xx)
 	HAL_GPIO_TogglePin(BQ76_CS_GPIO, BQ76_CS_PIN);
 	if(HAL_SPI_Transmit(&BQ76_INTERFACE, (uint8_t *) &packet, 
 					 	BQ76_TX_BUFF_SIZE, BQ76_TIMEOUT) != HAL_OK)
 	{
+        HAL_GPIO_TogglePin(BQ76_CS_GPIO, BQ76_CS_PIN);
 		return BQ76_SPI_TRANSMISSION_ERROR;
 	}
 	HAL_GPIO_TogglePin(BQ76_CS_GPIO, BQ76_CS_PIN);
@@ -162,30 +169,6 @@ static enum BQ76_status writespi(uint8_t spi_address, uint8_t reg_address,
 #endif
 }
 
-/**
- * @func writereg
- * @brief Write a register of the BQ76PL536 regardless to which group belongs
- * 		  to, remember that according to the datasheet there are three kind of 
- * 		  groups (Group 1, Group 2 and Group 3) where the first are eead-only 
- * 		  groups, the second read/write groups, and group 3 are read/write 
- * 		  registers which they need a special write sequence 
- * 		  (first write 0x35 to SHDW_CONTROL, and then immediately write to the 
- * 		  desired register), any intervening write cancels the sequence
- * @params[in] spi_address: spi_address of the device
- * @params[in] reg_address: desired register to write
- * @params[in] reg_data: data to write
- */
-static enum BQ76_status writereg(uint8_t spi_address, uint8_t reg_address,
-						 		 uint8_t reg_data)
-{
-	enum BQ76_status write_status;
-	if(reg_address >= FUNCTION_CONFIG_REG && reg_address <= OTT_CONFIG_REG){
-		write_status = writespi(spi_address, SHADOW_CONTROL_REG, 
-								SHDW_CONTROL_ENABLE);
-	}
-	write_status = writespi(spi_address, reg_address, reg_data);
-	return write_status;
-}
 
 /**
  * @func readspi
@@ -207,13 +190,16 @@ static enum BQ76_status readspi(uint8_t spi_address, uint8_t reg_address,
 	struct BQ76_read_packet_format packet = init_read_packet(spi_address,
 															 reg_address,
 															 read_length);
+    while(HAL_SPI_GetState(&BQ76_INTERFACE) != HAL_SPI_STATE_READY);
 	HAL_GPIO_TogglePin(BQ76_CS_GPIO, BQ76_CS_PIN);
 	if(HAL_SPI_Transmit(&BQ76_INTERFACE, (uint8_t *) &packet, 
 						BQ76_TX_BUFF_SIZE - 1, BQ76_TIMEOUT) != HAL_OK){
+        HAL_GPIO_TogglePin(BQ76_CS_GPIO, BQ76_CS_PIN);
 		return BQ76_SPI_TRANSMISSION_ERROR;
 	}
 	if(HAL_SPI_Receive(&BQ76_INTERFACE, packet.buffer, read_length + 1, 
-				   BQ76_TIMEOUT) != HAL_OK){
+                       BQ76_TIMEOUT) != HAL_OK){
+        HAL_GPIO_TogglePin(BQ76_CS_GPIO, BQ76_CS_PIN);
 		return BQ76_SPI_TRANSMISSION_ERROR;
 	}
     HAL_GPIO_TogglePin(BQ76_CS_GPIO, BQ76_CS_PIN);
@@ -241,62 +227,73 @@ enum BQ76_status bq76_init(struct BQ76 * device, uint8_t spi_address,
 	if(bq76_set_address(device, spi_address) != BQ76_OK){
 		return BQ76_ADDRESS_CONFIG_FAIL;
 	}
+    bq76_read_alert_reg(device);
 
 	// config adc control register
 	if(bq76_set_adc_control(device) != BQ76_OK){
 		return BQ76_ADC_CONFIG_FAIL;
 	}
+    bq76_read_alert_reg(device);
 	
 	// config balancing time outputs
 	if(bq76_set_cb_time(device, balancing_time) != BQ76_OK){
 		return BQ76_CB_TIME_CONFIG_FAIL;
 	}
+    bq76_read_alert_reg(device);
 
 	// set function configuration
 	if(bq76_set_function_config(device) != BQ76_OK){
 		return BQ76_FUNCTION_CONFIG_FAIL;
 	}
+    bq76_read_alert_reg(device);
 
 	// set I/O configuration
 	if(bq76_set_io_config(device) != BQ76_OK){
 		return BQ76_IO_CONFIG_FAIL;
 	}
+    bq76_read_alert_reg(device);
 
 	// set cov config
 	if(bq76_set_cov_config(device, cov_threshold) != BQ76_OK){
 		return BQ76_COV_CONFIG_FAIL;
 	}
+    bq76_read_alert_reg(device);
 
 	// set covt config
 	if(bq76_set_covt_config(device, covt_delay) != BQ76_OK){
 		return BQ76_COVT_CONFIG_FAIL;
 	}
+    bq76_read_alert_reg(device);
 
 	// set cuv config
 	if(bq76_set_cuv_config(device, cuv_threshold) != BQ76_OK){
 		return BQ76_CUV_CONFIG_FAIL;
 	}
+    bq76_read_alert_reg(device);
 
 	// set cuvt config
 	if(bq76_set_cuvt_config(device, cuvt_delay) != BQ76_OK){
 		return BQ76_CUVT_CONFIG_FAIL;
 	}
+    bq76_read_alert_reg(device);
 
 	// set ot config
 	if(bq76_set_ot_config(device, temp1_threshold, temp2_threshold) != BQ76_OK){
 		return BQ76_OT_CONFIG_FAIL;
 	}
+    bq76_read_alert_reg(device);
 
 	// set ott config
 	if(bq76_set_ott_config(device, temp_delay) != BQ76_OK){
 		return BQ76_OTT_CONFIG_FAIL;
 	}
+    bq76_read_alert_reg(device);
 	return BQ76_OK;
 }
 
 enum BQ76_status bq76_broadcast_reset()
 {
-	if(writereg(BROADCAST_ADDRESS, RESET_REG, RESET_DEVICE_VALUE) != BQ76_OK){
+	if(writespi(BROADCAST_ADDRESS, RESET_REG, RESET_DEVICE_VALUE) != BQ76_OK){
 		return BQ76_SPI_TRANSMISSION_ERROR;
 	}
 	return BQ76_OK;
@@ -304,7 +301,7 @@ enum BQ76_status bq76_broadcast_reset()
 
 enum BQ76_status bq76_reset(struct BQ76 * device)
 {
-	if(writereg((uint8_t) device->address_control.ADDR, RESET_REG, 
+	if(writespi((uint8_t) device->address_control.ADDR, RESET_REG, 
 				RESET_DEVICE_VALUE) != BQ76_OK){
 		return BQ76_SPI_TRANSMISSION_ERROR;
 	}
@@ -316,7 +313,7 @@ enum BQ76_status bq76_set_address(struct BQ76 * device, uint8_t address)
 	// Write new address to device
 	// Here we are assuming that the device is previously reset, if you want to
 	// modify the address call bq76_change_address
-	if(writereg(0x00, ADDRESS_CONTROL_REG, 
+	if(writespi(0x00, ADDRESS_CONTROL_REG, 
 				address) != BQ76_OK){
 		return BQ76_SPI_TRANSMISSION_ERROR;
 	}
@@ -329,29 +326,40 @@ enum BQ76_status bq76_set_address(struct BQ76 * device, uint8_t address)
 	}
     device->address_control.ADDR_RQST = address_buffer >> 7;
     device->address_control.ADDR = address_buffer & 0x01F;
+    
+    if(device->address_control.ADDR != address){
+        return BQ76_ADDRESS_CONFIG_FAIL;
+    }
+    // 2 - clear alert reg
+    // First write a 1 to the AR bit
+    uint8_t alert_clear = 0x80;
+    if(writespi(device->address_control.ADDR, ALERT_STATUS_REG, alert_clear) 
+            != BQ76_OK){
+        return BQ76_SPI_TRANSMISSION_ERROR;
+    }
+
+    // then write a 0 to the AR bit
+    alert_clear = 0x00;
+    if(writespi(device->address_control.ADDR, ALERT_STATUS_REG, alert_clear) 
+            != BQ76_OK){
+        return BQ76_SPI_TRANSMISSION_ERROR;
+    }
+    
 	return BQ76_OK;
 }
 
 enum BQ76_status bq76_set_adc_control(struct BQ76 * device)
 {
-	uint8_t adc_control_data = (device->adc_control.CELL_SEL << 6)	| 
+	uint8_t adc_control_data = (device->adc_control.ADC_ON << 6)	| 
 				   			   (device->adc_control.GPAI << 5)		| 
 				   			   (device->adc_control.TS << 4)		| 
 				   			   (device->adc_control.GPAI << 3)		| 
 				   			   device->adc_control.CELL_SEL;
     // write address control 
-	if(writereg((uint8_t) device->address_control.ADDR, ADC_CONTROL_REG, 
+	if(writespi((uint8_t) device->address_control.ADDR, ADC_CONTROL_REG, 
 				adc_control_data) != BQ76_OK){
 		return BQ76_SPI_TRANSMISSION_ERROR;
 	}
-
-
-    // validate writteng adc value
-    uint8_t adc_control_data_buffer;
-    if(readspi((uint8_t) device->address_control.ADDR, ADC_CONTROL_REG, 1, 
-               &adc_control_data_buffer) != BQ76_OK){
-        return BQ76_SPI_TRANSMISSION_ERROR;
-    }
     
 	return BQ76_OK;
 }
@@ -361,7 +369,7 @@ enum BQ76_status bq76_set_cb_time(struct BQ76 * device, uint8_t balancing_time)
 	device->cb_time.CBT = (balancing_time > 63) ? 63 : balancing_time;
 	uint8_t cb_time_data = device->cb_time.CBCT << 7 | device->cb_time.CBT;
 
-	if(writereg((uint8_t) device->address_control.ADDR, CB_TIME_REG, 
+	if(writespi((uint8_t) device->address_control.ADDR, CB_TIME_REG, 
 				cb_time_data) != BQ76_OK){
 		return BQ76_SPI_TRANSMISSION_ERROR;
 	}
@@ -374,7 +382,7 @@ enum BQ76_status bq76_set_function_config(struct BQ76 * device)
 	uint8_t function_config_data =	(device->function_config.GPAI_REF << 5) | 
 				 				    (device->function_config.GPAI_SRC << 4) |
 									(device->function_config.CN << 2);
-	if(writereg((uint8_t) device->address_control.ADDR, FUNCTION_CONFIG_REG,
+	if(writespi((uint8_t) device->address_control.ADDR, FUNCTION_CONFIG_REG,
 				(uint8_t) function_config_data) != BQ76_OK){
 		return BQ76_SPI_TRANSMISSION_ERROR;
 	}
@@ -385,7 +393,7 @@ enum BQ76_status bq76_set_io_config(struct BQ76 * device)
 {
 	uint8_t io_config_data = (device->io_config.CRCNOFLT << 7) | 
 				   			 (device->io_config.CRC_DIS);
-	if(writereg((uint8_t) device->address_control.ADDR, IO_CONFIG_REG,
+	if(writespi((uint8_t) device->address_control.ADDR, IO_CONFIG_REG,
 				io_config_data) != BQ76_OK){
 		return BQ76_SPI_TRANSMISSION_ERROR;
 	}
@@ -398,10 +406,16 @@ enum BQ76_status bq76_set_cov_config(struct BQ76 * device,
 	device->cov_config.VTH = calculate_cov(voltage_threshold);
 	uint8_t cov_config_data = (device->cov_config.DISABLE << 7) | 
 							  (device->cov_config.VTH);
-	if(writereg((uint8_t) device->address_control.ADDR, COV_CONFIG_REG, 
+	if(writespi((uint8_t) device->address_control.ADDR, COV_CONFIG_REG, 
 				cov_config_data) != BQ76_OK){
 		return BQ76_SPI_TRANSMISSION_ERROR;
 	}
+    
+    uint8_t cov_config_data_buffer;
+    if(readspi((uint8_t) device->address_control.ADDR, COV_CONFIG_REG, 1,
+                &cov_config_data_buffer) != BQ76_OK){
+        return BQ76_SPI_TRANSMISSION_ERROR;
+    }
 	return BQ76_OK;
 }
 
@@ -411,7 +425,7 @@ enum BQ76_status bq76_set_cuv_config(struct BQ76 * device,
 	device->cov_config.VTH = calculate_cuv(voltage_threshold);
 	uint8_t cov_config_data = (device->cov_config.DISABLE << 7) | 
 							  device->cov_config.VTH;
-	if(writereg((uint8_t) device->address_control.ADDR, CUV_CONFIG_REG,
+	if(writespi((uint8_t) device->address_control.ADDR, CUV_CONFIG_REG,
 			    cov_config_data) != BQ76_OK){
 		return BQ76_SPI_TRANSMISSION_ERROR;
 	}
@@ -423,7 +437,7 @@ enum BQ76_status bq76_set_covt_config(struct BQ76 * device,	uint16_t delay)
 	device->covt_config.DELAY = calculate_delay(delay);
 	uint8_t covt_config_data = (device->covt_config.US_MS << 7) |
 							   device->covt_config.DELAY;
-	if(writereg((uint8_t) device->address_control.ADDR, COVT_CONFIG_REG, 
+	if(writespi((uint8_t) device->address_control.ADDR, COVT_CONFIG_REG, 
 				covt_config_data) != BQ76_OK){
 		return BQ76_SPI_TRANSMISSION_ERROR;
 	}
@@ -435,7 +449,7 @@ enum BQ76_status bq76_set_cuvt_config(struct BQ76 * device, uint16_t delay)
 	device->cuvt_config.DELAY = calculate_delay(delay);
 	uint8_t cuvt_config_data = (device->cuvt_config.US_MS << 7) |
 							   (device->cuvt_config.DELAY);
-	if(writereg((uint8_t) device->address_control.ADDR, CUVT_CONFIG_REG, 
+	if(writespi((uint8_t) device->address_control.ADDR, CUVT_CONFIG_REG, 
 				cuvt_config_data) != BQ76_OK){
 		return BQ76_SPI_TRANSMISSION_ERROR;
 	}
@@ -450,7 +464,7 @@ enum BQ76_status bq76_set_ot_config(struct BQ76 * device,
 	device->ot_config.OT2 = calculate_ot(ot2_threshold);
 	uint8_t ot_config_data = (device->ot_config.OT2 << 4) |
 							 (device->ot_config.OT1);
-	if(writereg((uint8_t) device->address_control.ADDR, OT_CONFIG_REG,
+	if(writespi((uint8_t) device->address_control.ADDR, OT_CONFIG_REG,
 			   ot_config_data) != BQ76_OK){
 		return BQ76_SPI_TRANSMISSION_ERROR;
 	}
@@ -462,7 +476,7 @@ enum BQ76_status bq76_set_ott_config(struct BQ76 * device,
 {
 	// the LSB of ott_config representes 10mS
 	device->ott_config = calculate_ott(delay_value);
-	if(writereg((uint8_t) device->address_control.ADDR, OTT_CONFIG_REG,
+	if(writespi((uint8_t) device->address_control.ADDR, OTT_CONFIG_REG,
 				device->ott_config) != BQ76_OK){
 		return BQ76_SPI_TRANSMISSION_ERROR;
 	}
@@ -491,7 +505,7 @@ enum BQ76_status bq76_read_cells(struct BQ76 * device)
 
 enum BQ76_status bq76_swrqst_adc_convert(struct BQ76 * device)
 {
-    if(writereg((uint8_t) device->address_control.ADDR, ADC_CONVERT_REG, 
+    if(writespi((uint8_t) device->address_control.ADDR, ADC_CONVERT_REG, 
                 0x01) != BQ76_OK){
         return BQ76_SPI_TRANSMISSION_ERROR;
     }
@@ -500,7 +514,7 @@ enum BQ76_status bq76_swrqst_adc_convert(struct BQ76 * device)
 
 enum BQ76_status bq76_brdcst_adc_convert()
 {
-    if(writereg(BROADCAST_ADDRESS, ADC_CONVERT_REG, 
+    if(writespi(BROADCAST_ADDRESS, ADC_CONVERT_REG, 
                 0x01) != BQ76_OK){
         return BQ76_SPI_TRANSMISSION_ERROR;
     }
@@ -509,17 +523,107 @@ enum BQ76_status bq76_brdcst_adc_convert()
 
 enum BQ76_status bq76_read_alert_reg(struct BQ76 * device)
 {
-    if(readreg((uint8_t) device->address_control.ADDR, ALERT_STATUS_REG, 1, 
-               (uint8_t) device->alert_status) != BQ76_OK){
+    uint8_t buffer;
+    if(readspi((uint8_t) device->address_control.ADDR, ALERT_STATUS_REG, 1, 
+               (uint8_t *) &buffer) != BQ76_OK){
         return BQ76_SPI_TRANSMISSION_ERROR;
     }
+    device->alert_status.OT1 = buffer & 0x01;
+    device->alert_status.OT2 = buffer>>1 & 0x01;
+    device->alert_status.SLEEP = buffer>>2 & 0x01;
+    device->alert_status.TSD = buffer>>3 & 0x01;
+    device->alert_status.FORCE = buffer>>4 & 0x01;
+    device->alert_status.ECC_ERR = buffer>>5 & 0x01;
+    device->alert_status.PARITY = buffer>>6 & 0x01;
+    device->alert_status.AR = buffer>>7 & 0x01;
     return BQ76_OK;
 }
 
 enum BQ76_status bq76_read_fault_reg(struct BQ76 * device)
 {
-    if(readreg((uint8_t) device->address_control.ADDR, FAULT_STATUS_REG, 1,
-               (uint8_t) device->fault_status) != BQ76_OK){
+    uint8_t buffer = 0x00;
+    if(readspi((uint8_t) device->address_control.ADDR, FAULT_STATUS_REG, 1,
+               &buffer) != BQ76_OK){
+        return BQ76_SPI_TRANSMISSION_ERROR;
+    }
+    device->fault_status.COV_BIT = buffer & 0x01;
+    device->fault_status.CUV_BIT = buffer>>1 & 0x01;
+    device->fault_status.CRC_BIT = buffer>>2 & 0x01;
+    device->fault_status.POR_BIT = buffer>>3 & 0x01;
+    device->fault_status.FORCE_BIT = buffer>>4 & 0x01;
+    device->fault_status.I_FAULT_BIT = buffer>>5 & 0x01;
+    return BQ76_OK;
+}
+
+enum BQ76_status bq76_clear_fault_reg(struct BQ76 * device, uint8_t flags)
+{
+    if(writespi((uint8_t) device->address_control.ADDR, FAULT_STATUS_REG,
+                flags) != BQ76_OK) {
+        return BQ76_SPI_TRANSMISSION_ERROR;
+    }
+    if(writespi((uint8_t) device->address_control.ADDR, FAULT_STATUS_REG,
+                0x00) != BQ76_OK) {
+        return BQ76_SPI_TRANSMISSION_ERROR;
+    }
+    return BQ76_OK;
+}
+
+enum BQ76_status bq76_clear_alert_reg(struct BQ76 * device, uint8_t flags)
+{
+    if(writespi((uint8_t) device->address_control.ADDR, ALERT_STATUS_REG,
+                 flags) != BQ76_OK){
+        return BQ76_SPI_TRANSMISSION_ERROR;
+    }
+    if(writespi((uint8_t) device->address_control.ADDR, ALERT_STATUS_REG,
+                 0x00) != BQ76_OK){
+        return BQ76_SPI_TRANSMISSION_ERROR;
+    }
+    return BQ76_OK;
+}
+
+enum BQ76_status bq76_read_cov_fault_reg(struct BQ76 * device)
+{
+    uint8_t buffer = 0x00;
+    if(readspi((uint8_t) device->address_control.ADDR, COV_FAULT_REG, 1,
+                &buffer) != BQ76_OK){
+        return BQ76_SPI_TRANSMISSION_ERROR;
+    }
+    device->cov_fault.OV1 = buffer & 0x01;
+    device->cov_fault.OV2 = buffer>>1 & 0x01;
+    device->cov_fault.OV3 = buffer>>2 & 0x01;
+    device->cov_fault.OV4 = buffer>>3 & 0x01;
+    device->cov_fault.OV5 = buffer>>4 & 0x01;
+    device->cov_fault.OV6 = buffer>>5 & 0x01;
+    return BQ76_OK;
+}
+
+enum BQ76_status bq76_read_cuv_fault_reg(struct BQ76 * device)
+{
+    uint8_t buffer;
+    if(readspi((uint8_t) device->address_control.ADDR, CUV_FAULT_REG, 1,
+                &buffer) != BQ76_OK){
+        return BQ76_SPI_TRANSMISSION_ERROR;
+    }
+    device->cuv_fault.UV1 = buffer & 0x01;
+    device->cuv_fault.UV2 = buffer>>1 & 0x01;
+    device->cuv_fault.UV3 = buffer>>2 & 0x01;
+    device->cuv_fault.UV4 = buffer>>3 & 0x01;
+    device->cuv_fault.UV5 = buffer>>4 & 0x01;
+    device->cuv_fault.UV6 = buffer>>5 & 0x01;
+    return BQ76_OK;
+}
+
+enum BQ76_status bq76_set_balancing_output(struct BQ76 * device, 
+                                           uint8_t transistors)
+{
+    device->cb_ctrl.CBAL = transistors & 0x3F;
+    if(writespi((uint8_t) device->address_control.ADDR, CB_CONTROL_REG,
+                (uint8_t) device->cb_ctrl.CBAL) != BQ76_OK){
+        return BQ76_SPI_TRANSMISSION_ERROR;
+    }
+    uint8_t buffer;
+    if(readspi(device->address_control.ADDR, CB_CONTROL_REG, 1, &buffer) 
+            != BQ76_OK){
         return BQ76_SPI_TRANSMISSION_ERROR;
     }
     return BQ76_OK;

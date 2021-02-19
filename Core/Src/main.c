@@ -32,13 +32,16 @@ SPI_HandleTypeDef hspi1;
 /* USER CODE BEGIN PV */
 struct INA226 current_sensor;
 struct BQ76 battery_monitor = {
-	.adc_control = {
-		.CELL_SEL = CELL_1_6,
-		.TS = BOTH
-	},
-	.function_config = {
-		.CN = CELLS_6,
-	},
+    .adc_control = {
+        .CELL_SEL = CELL_1_6,
+        .TS = BOTH,
+    },
+    .cb_time = {
+        .CBCT = 1,
+    },
+    .function_config = {
+        .CN = CELLS_6,
+    },
 };
 /* USER CODE END PV */
 
@@ -47,6 +50,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_SPI1_Init(void);
+
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -54,6 +58,8 @@ static void MX_SPI1_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 extern void initialise_monitor_handles(void);
+static void handle_bq76_faults(struct BQ76 * device);
+static void handle_bq76_alerts(struct BQ76 * device);
 /* USER CODE END 0 */
 
 /**
@@ -62,54 +68,66 @@ extern void initialise_monitor_handles(void);
  */
 int main(void)
 {
-	/* USER CODE BEGIN 1 */
+    /* USER CODE BEGIN 1 */
 
-	/* USER CODE END 1 */
+    /* USER CODE END 1 */
 
-	/* MCU Configuration--------------------------------------------------------*/
+    /* MCU Configuration--------------------------------------------------------*/
 
-	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-	HAL_Init();
+    /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+    __disable_irq();
+    HAL_Init();
 
-	/* USER CODE BEGIN Init */
-	initialise_monitor_handles();
-	/* USER CODE END Init */
+    /* USER CODE BEGIN Init */
+    initialise_monitor_handles();
+    /* USER CODE END Init */
 
-	/* Configure the system clock */
-	SystemClock_Config();
+    /* Configure the system clock */
+    SystemClock_Config();
 
-	/* USER CODE BEGIN SysInit */
+    /* USER CODE BEGIN SysInit */
 
-	/* USER CODE END SysInit */
+    /* USER CODE END SysInit */
 
-	/* Initialize all configured peripherals */
-	MX_GPIO_Init();
-	MX_I2C1_Init();
-	MX_SPI1_Init();
-	ina226_reset(&current_sensor);
-	ina226_init(&current_sensor, GND_GND_ADDRESS, 0.1, 3.2f, AVG1, 
-			t1100US, t1100US, SHUNT_AND_BUS_CONT, DEFAULT);
-	bq76_init(&battery_monitor, 0x01, 30, 4.1f, 10, 2.5f, 10, 60, 60, 10);
+    /* Initialize all configured peripherals */
+    MX_GPIO_Init();
+    MX_I2C1_Init();
+    MX_SPI1_Init();
 
-	/* USER CODE BEGIN 2 */
+    ina226_reset(&current_sensor);
+    ina226_init(&current_sensor, GND_GND_ADDRESS, 0.1, 3.2f, AVG1, 
+            t1100US, t1100US, SHUNT_AND_BUS_CONT, DEFAULT);
+    bq76_init(&battery_monitor, 0x01, 60, 4.1f, 100, 2.5f, 100, 60, 60, 100);
+    __enable_irq();
 
-	/* USER CODE END 2 */
+    /* USER CODE BEGIN 2 */
 
-	/* Infinite loop */
-	/* USER CODE BEGIN WHILE */
-	float32_t current, pwr, vbus, vshunt;
-	_DEBUG("Start measurements\n");
-	while (1)
-	{
-		HAL_Delay(1500);
-		ina226_get_vbus(&current_sensor, &vbus);
-		ina226_get_current(&current_sensor, &current);
-		ina226_get_vshunt(&current_sensor, &vshunt);
-		ina226_get_pwr(&current_sensor, &pwr);
-		_DEBUG("I: %.3f P: %.3f V_shunt: %.3f V_bus: %.3f\n", current, pwr, 
-			   vshunt, vbus);
-	}
-	/* USER CODE END 3 */
+    /* USER CODE END 2 */
+
+    /* Infinite loop */
+    /* USER CODE BEGIN WHILE */
+    //float32_t current, pwr, vbus, vshunt;
+    _DEBUG("Start measurements\n");
+    uint8_t transistors = 0x00;
+    int i = 0;
+    transistors = 0x01 << i;
+    bq76_set_balancing_output(&battery_monitor, 0x01);
+    _DEBUG("Balacing output: %d\n", transistors);
+    while (1)
+    {
+        //i = (i == 5) ? i + 1 : 0;
+        /*
+        ina226_get_vbus(&current_sensor, &vbus);
+        ina226_get_current(&current_sensor, &current);
+        ina226_get_vshunt(&current_sensor, &vshunt);
+        ina226_get_pwr(&current_sensor, &pwr);
+        _DEBUG("I: %.3f P: %.3f V_shunt: %.3f V_bus: %.3f\n", current, pwr, 
+                vshunt, vbus);
+        */
+
+
+    }
+    /* USER CODE END 3 */
 }
 
 /**
@@ -118,83 +136,83 @@ int main(void)
  */
 void SystemClock_Config(void)
 {
-	RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-	RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+    RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+    RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
-	/** Configure the main internal regulator output voltage
-	*/
-	__HAL_RCC_PWR_CLK_ENABLE();
-	__HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
-	/** Initializes the RCC Oscillators according to the specified parameters
-	 * in the RCC_OscInitTypeDef structure.
-	 */
-	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-	RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-	RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-	RCC_OscInitStruct.PLL.PLLM = 8;
-	RCC_OscInitStruct.PLL.PLLN = 336;
-	RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-	RCC_OscInitStruct.PLL.PLLQ = 7;
-	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-	{
-		Error_Handler();
-	}
-	/** Initializes the CPU, AHB and APB buses clocks
-	*/
-	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-		|RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
-	RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
+    /** Configure the main internal regulator output voltage
+    */
+    __HAL_RCC_PWR_CLK_ENABLE();
+    __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
+    /** Initializes the RCC Oscillators according to the specified parameters
+     * in the RCC_OscInitTypeDef structure.
+     */
+    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+    RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+    RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+    RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+    RCC_OscInitStruct.PLL.PLLM = 8;
+    RCC_OscInitStruct.PLL.PLLN = 336;
+    RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
+    RCC_OscInitStruct.PLL.PLLQ = 7;
+    if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+    {
+        Error_Handler();
+    }
+    /** Initializes the CPU, AHB and APB buses clocks
+    */
+    RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+        |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+    RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+    RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+    RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
+    RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
-	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
-	{
-		Error_Handler();
-	}
+    if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
+    {
+        Error_Handler();
+    }
 }
 
 
 /**
-  * @brief I2C1 Initialization Function
-  * @param None
+ * @brief I2C1 Initialization Function
+ * @param None
 
-  */
+*/
 static void MX_I2C1_Init(void)
 {
 
-	/* USER CODE BEGIN I2C1_Init 0 */
+    /* USER CODE BEGIN I2C1_Init 0 */
 
-	/* USER CODE END I2C1_Init 0 */
+    /* USER CODE END I2C1_Init 0 */
 
-	/* USER CODE BEGIN I2C1_Init 1 */
+    /* USER CODE BEGIN I2C1_Init 1 */
 
-	/* USER CODE END I2C1_Init 1 */
-	hi2c1.Instance = I2C1;
-	hi2c1.Init.ClockSpeed = 100000;
-	hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
-	hi2c1.Init.OwnAddress1 = 0;
-	hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
-	hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
-	hi2c1.Init.OwnAddress2 = 0;
-	hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
-	hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-	if (HAL_I2C_Init(&hi2c1) != HAL_OK)
-	{
-		Error_Handler();
-	}
-	/* USER CODE BEGIN I2C1_Init 2 */
+    /* USER CODE END I2C1_Init 1 */
+    hi2c1.Instance = I2C1;
+    hi2c1.Init.ClockSpeed = 100000;
+    hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
+    hi2c1.Init.OwnAddress1 = 0;
+    hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+    hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+    hi2c1.Init.OwnAddress2 = 0;
+    hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+    hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+    if (HAL_I2C_Init(&hi2c1) != HAL_OK)
+    {
+        Error_Handler();
+    }
+    /* USER CODE BEGIN I2C1_Init 2 */
 
-	/* USER CODE END I2C1_Init 2 */
+    /* USER CODE END I2C1_Init 2 */
 
 }
 
 /**
-  * @brief SPI1 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief SPI1 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_SPI1_Init(void)
 {
 
@@ -229,10 +247,10 @@ static void MX_SPI1_Init(void)
 }
 
 /**
-  * @brief GPIO Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief GPIO Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_GPIO_Init(void)
 {
     GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -305,7 +323,83 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
     if(GPIO_Pin == BQ76_DRDY_Pin){
         bq76_read_cells(&battery_monitor);
-    } 
+    }
+    if(GPIO_Pin == BQ76_ALERT_Pin){
+        bq76_read_alert_reg(&battery_monitor);
+        handle_bq76_alerts(&battery_monitor);
+        bq76_read_alert_reg(&battery_monitor);
+    }
+    if(GPIO_Pin == BQ76_FAULT_Pin){
+        bq76_read_fault_reg(&battery_monitor);
+        handle_bq76_faults(&battery_monitor);
+        bq76_read_fault_reg(&battery_monitor);
+    }
+}
+
+static void handle_bq76_alerts(struct BQ76 * device){
+    uint8_t clear_alert_flags = 0;
+    
+    if(device->alert_status.OT1){
+        clear_alert_flags |= device->alert_status.OT1;
+    }
+    if(device->alert_status.OT2){
+        clear_alert_flags |= device->alert_status.OT2 << 1;
+    }
+    if(device->alert_status.SLEEP){
+        clear_alert_flags |= device->alert_status.SLEEP << 2;
+    }
+    if(device->alert_status.TSD){
+        clear_alert_flags |= device->alert_status.TSD << 3;
+    }
+    if(device->alert_status.FORCE){
+        clear_alert_flags |= device->alert_status.FORCE << 4;
+    }
+    if(device->alert_status.ECC_ERR){
+        clear_alert_flags |= device->alert_status.ECC_ERR << 5;
+    }
+    if(device->alert_status.PARITY){
+        clear_alert_flags |= device->alert_status.PARITY << 6;
+    }
+    if(device->alert_status.AR){
+        clear_alert_flags |= device->alert_status.AR << 7;
+    }
+    bq76_clear_alert_reg(device, clear_alert_flags);
+}
+
+
+static void handle_bq76_faults(struct BQ76 * device)
+{ 
+    // flags to clear at the last stage of this function
+    uint8_t clear_fault_flags = 0;
+
+    // the battery monitor suffered a Power-On Reset
+    if(device->fault_status.POR_BIT){
+        // in this case we only want to inform the user over CAN and then clear
+        // that POR bit
+        clear_fault_flags |= device->fault_status.POR_BIT << 3;
+    }
+    if(device->fault_status.I_FAULT_BIT){
+        // In this case, the bq76pl536a is basically broken, we cannot relie on
+        // the data that's sending to the MCU, then call the Error_Handler.
+        // Send this info over the CAN bus and disconnect the battery
+        clear_fault_flags |= device->fault_status.I_FAULT_BIT << 5; 
+    }
+    if(device->fault_status.COV_BIT){
+        // in this case we want to determine which cell is having an overvoltage
+        // and switch off the mosfet switch
+        bq76_read_cov_fault_reg(device);
+        // TODO: switch off the current circulation
+        clear_fault_flags |= device->fault_status.COV_BIT;
+    }
+    if(device->fault_status.CUV_BIT){
+        bq76_read_cuv_fault_reg(device);
+        // TODO: switch off the current circulation
+        clear_fault_flags |= device->fault_status.CUV_BIT << 1;
+    }
+    if(device->fault_status.CRC_BIT){
+        clear_fault_flags |= device->fault_status.CRC_BIT << 2;
+    }
+    bq76_clear_fault_reg(device, clear_fault_flags);
 }
 
 /* USER CODE END 4 */
@@ -316,10 +410,10 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
  */
 void Error_Handler(void)
 {
-	/* USER CODE BEGIN Error_Handler_Debug */
-	/* User can add his own implementation to report the HAL error return state */
+    /* USER CODE BEGIN Error_Handler_Debug */
+    /* User can add his own implementation to report the HAL error return state */
 
-	/* USER CODE END Error_Handler_Debug */
+    /* USER CODE END Error_Handler_Debug */
 }
 
 #ifdef  USE_FULL_ASSERT
@@ -332,10 +426,10 @@ void Error_Handler(void)
  */
 void assert_failed(uint8_t *file, uint32_t line)
 {
-	/* USER CODE BEGIN 6 */
-	/* User can add his own implementation to report the file name and line number,
+    /* USER CODE BEGIN 6 */
+    /* User can add his own implementation to report the file name and line number,
 tex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-	/* USER CODE END 6 */
+    /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
 

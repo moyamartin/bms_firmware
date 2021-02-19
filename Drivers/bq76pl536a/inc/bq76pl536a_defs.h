@@ -167,14 +167,14 @@
  *	Default value: 0b00000000 0x00
  *	Type: R - GROUP 1
  */
-#define COV_STATUS_REG			(0x22) 
+#define COV_FAULT_REG			(0x22) 
 
 /** 
  * BQ76PL536A CUV Fault Status Register address 
  *	Default value: 0b00000000 0x00
  *	Type: R - GROUP 1
  */
-#define CUV_STATUS_REG			(0x23)
+#define CUV_FAULT_REG			(0x23)
 
 /** 
  * BQ76PL536A Preresult A Status Register address 
@@ -307,7 +307,7 @@
  *	Default value: 0b00000000 0x00
  *	Type: R/W - GROUP 3
  */
-#define OT_CONFIG_REG			(0x45)
+#define OT_CONFIG_REG			(0x46)
 
 /** 
  * BQ76PL536A OTT Config Configuration address 
@@ -359,7 +359,7 @@
 /**
  * broadcast address
  */
-#define BROADCAST_ADDRESS		(0x3f)
+#define BROADCAST_ADDRESS		(0x3F)
 
 /**
  * COV predefined values
@@ -380,8 +380,6 @@
 #define CAL_TEMP_LSB			5.0f
 #define OTT_LSB_VALUE			10
 #define MAX_OTT_DELAY			2550
-
-#define SHDW_CONTROL_ENABLE 	0x27
 
 /**
  * @struct device_status
@@ -418,12 +416,12 @@ struct alert_status{
  * @brief struct that represents the fault status register data
  */
 struct fault_status{
-	uint8_t COV:1;		/**< Indicates COV detection */
-	uint8_t CUV:1;		/**< Indicates CUV detection */	
-	uint8_t CRC:1;		/**< Indicates garbled packet reception */
-	uint8_t POR:1;		/**< Indicates power-on reset */
-	uint8_t FORCE:1; 	/**< Indicates the FAULT signal */
-	uint8_t I_FAULT:1;	/**< Indicates internal reg failure check*/
+	uint8_t COV_BIT:1;		/**< Indicates COV detection */
+	uint8_t CUV_BIT:1;		/**< Indicates CUV detection */	
+	uint8_t CRC_BIT:1;		/**< Indicates garbled packet reception */
+	uint8_t POR_BIT:1;		/**< Indicates power-on reset */
+	uint8_t FORCE_BIT:1; 	/**< Indicates the FAULT signal */
+	uint8_t I_FAULT_BIT:1;	/**< Indicates internal reg failure check*/
 	uint8_t RESERVED:2;	/**< Reserved */
 };
 
