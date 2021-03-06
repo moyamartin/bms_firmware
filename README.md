@@ -5,6 +5,12 @@ This is the firmware dev section of the [BMS project](https://github.com/moyamar
 It's mainly based on STM32Cube HAL (Hardware Abstraction Layer) and the CMSIS
 (Cortex Microcontroller Software Interface Standard).
 
+To clone this repo run:
+
+```
+git clone --recursive -j8 https://github.com/moyamartin/bms_firmware.git
+```
+
 ## Features
 
 The firmware has to be able to accomplish the following goals:
@@ -74,4 +80,20 @@ arm-none-eabi-gdb -f root_path/bms_firmare/build/bms_firmare.elf -x init.gdb
 ```
 
 ### Windows
+
+## Testing
+
+We are running some local test for specific algorithms using [Cpputest](http://cpputest.github.io/). To run them first build and configure the framework running:
+
+```
+cd path_to_repo/Test/cpputest/cpputest_build && autoreconf .. -i && ../configure && make && mkdir ../lib && cp ./lib/* ../lib/
+```
+
+And them, to execute the tests run:
+
+```
+cd Test && make -B gcov
+```
+
+This will make a test coverage html file saying which tests passed or failed
 
