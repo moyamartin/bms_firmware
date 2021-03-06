@@ -59,7 +59,7 @@ NOTE: to build the firmware without debug symbols modify the `Makefile` and set
 the `DEBUG` variable to 0. (WIP, run `make debug` or `make prod` to avoid
 changing this variable manually)
 
-2- *Load Firmware*: To load the firmware to the microcontroller run the
+2- To load the firmware to the microcontroller run the
 following command
 
 ```
