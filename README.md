@@ -11,6 +11,18 @@ To clone this repo run:
 git clone --recursive -j8 https://github.com/moyamartin/bms_firmware.git
 ```
 
+## Folder Structure
+
+* **Core**: Contains the firmware main source and header files related to the
+  project's firmware
+
+* **Test**: Contains the unit tests related to different algorithms of the
+  project, unit tests are NOT related to device drivers and so on. We would need
+  to work on a hardware in the loop testing workbench for that.
+
+* **Drivers**: Contains the STM32Cube HAL, CMSIS software package and device
+  drivers for the different peripherals of the main board
+
 ## Features
 
 The firmware has to be able to accomplish the following goals:
