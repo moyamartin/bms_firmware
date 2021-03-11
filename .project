@@ -122,20 +122,5 @@
 			<type>1</type>
 			<locationURI>$%7BPROJECT_LOC%7D/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.c</locationURI>
 		</link>
-		<link>
-			<name>Application/User/Core/main.c</name>
-			<type>1</type>
-			<locationURI>$%7BPROJECT_LOC%7D/Core/Src/main.c</locationURI>
-		</link>
-		<link>
-			<name>Application/User/Core/stm32f4xx_hal_msp.c</name>
-			<type>1</type>
-			<locationURI>$%7BPROJECT_LOC%7D/Core/Src/stm32f4xx_hal_msp.c</locationURI>
-		</link>
-		<link>
-			<name>Application/User/Core/stm32f4xx_it.c</name>
-			<type>1</type>
-			<locationURI>$%7BPROJECT_LOC%7D/Core/Src/stm32f4xx_it.c</locationURI>
-		</link>
 	</linkedResources>
 </projectDescription>
