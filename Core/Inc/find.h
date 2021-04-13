@@ -44,4 +44,23 @@ uint32_t find_closest_value_f32(float32_t needle, const float32_t * haysack,
 uint32_t get_closest_index_f32(float32_t target, uint32_t index_a, 
 							   uint32_t index_b, const float32_t * haysack);
 
+/**
+ *	@fn			  	get_max_index_f32
+ *	@brief  		Gets the index of the max value within an array
+ *	@params[in]   	array of float32_t values where to look for the max value
+ *	@params[in]		length of the array parameter
+ *	@returns		returns the index of the max value
+ */
+uint32_t get_max_index_f32(const float32_t * array, size_t length);
+
+
+/**
+ *	@fn			  	get_min_index_f32
+ *	@brief  		Gets the index of the min value within an array
+ *	@params[in]   	array of float32_t values where to look for the max value
+ *	@params[in]		length of the array parameter
+ *	@returns		returns the index of the min value
+ */
+uint32_t get_min_index_f32(const float32_t * array, size_t lenght);
+
 #endif
