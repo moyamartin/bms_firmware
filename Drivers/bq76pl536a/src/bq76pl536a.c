@@ -227,67 +227,56 @@ enum BQ76_status bq76_init(struct BQ76 * device, uint8_t spi_address,
 	if(bq76_set_address(device, spi_address) != BQ76_OK){
 		return BQ76_ADDRESS_CONFIG_FAIL;
 	}
-    bq76_read_alert_reg(device);
 
 	// config adc control register
 	if(bq76_set_adc_control(device) != BQ76_OK){
 		return BQ76_ADC_CONFIG_FAIL;
 	}
-    bq76_read_alert_reg(device);
 	
 	// config balancing time outputs
 	if(bq76_set_cb_time(device, balancing_time) != BQ76_OK){
 		return BQ76_CB_TIME_CONFIG_FAIL;
 	}
-    bq76_read_alert_reg(device);
 
 	// set function configuration
 	if(bq76_set_function_config(device) != BQ76_OK){
 		return BQ76_FUNCTION_CONFIG_FAIL;
 	}
-    bq76_read_alert_reg(device);
 
 	// set I/O configuration
 	if(bq76_set_io_config(device) != BQ76_OK){
 		return BQ76_IO_CONFIG_FAIL;
 	}
-    bq76_read_alert_reg(device);
 
 	// set cov config
 	if(bq76_set_cov_config(device, cov_threshold) != BQ76_OK){
 		return BQ76_COV_CONFIG_FAIL;
 	}
-    bq76_read_alert_reg(device);
 
 	// set covt config
 	if(bq76_set_covt_config(device, covt_delay) != BQ76_OK){
 		return BQ76_COVT_CONFIG_FAIL;
 	}
-    bq76_read_alert_reg(device);
 
 	// set cuv config
 	if(bq76_set_cuv_config(device, cuv_threshold) != BQ76_OK){
 		return BQ76_CUV_CONFIG_FAIL;
 	}
-    bq76_read_alert_reg(device);
 
 	// set cuvt config
 	if(bq76_set_cuvt_config(device, cuvt_delay) != BQ76_OK){
 		return BQ76_CUVT_CONFIG_FAIL;
 	}
-    bq76_read_alert_reg(device);
 
 	// set ot config
 	if(bq76_set_ot_config(device, temp1_threshold, temp2_threshold) != BQ76_OK){
 		return BQ76_OT_CONFIG_FAIL;
 	}
-    bq76_read_alert_reg(device);
 
 	// set ott config
 	if(bq76_set_ott_config(device, temp_delay) != BQ76_OK){
 		return BQ76_OTT_CONFIG_FAIL;
 	}
-    bq76_read_alert_reg(device);
 	return BQ76_OK;
 }
 
