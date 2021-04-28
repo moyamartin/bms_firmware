@@ -100,6 +100,7 @@ struct BQ76 {
 	struct vth_config cuv_config;
 	uint8_t ott_config;
 	uint8_t user_register[4];
+    uint8_t data_conversion_ongoing;
     float32_t v_cells[6];
 };
 

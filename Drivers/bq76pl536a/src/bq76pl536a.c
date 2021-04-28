@@ -486,7 +486,7 @@ enum BQ76_status bq76_set_ott_config(struct BQ76 * device,
 enum BQ76_status bq76_read_cells(struct BQ76 * device)
 {
     // the amount of cells to be read from a device is automatically set by the
-    // adc_control register
+    // adc_control registerp
     uint8_t n_cells = device->adc_control.CELL_SEL + 1;
     uint8_t raw_cell_voltage[n_cells*2];
     if(readspi((uint8_t) device->address_control.ADDR, VCELL1_LOW_REG, 
@@ -505,6 +505,7 @@ enum BQ76_status bq76_read_cells(struct BQ76 * device)
 
 enum BQ76_status bq76_swrqst_adc_convert(struct BQ76 * device)
 {
+    device->data_conversion_ongoing = 1;
     if(writespi((uint8_t) device->address_control.ADDR, ADC_CONVERT_REG, 
                 0x01) != BQ76_OK){
         return BQ76_SPI_TRANSMISSION_ERROR;

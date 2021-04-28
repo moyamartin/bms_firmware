@@ -33,6 +33,7 @@ SPI_HandleTypeDef hspi1;
 struct INA226 current_sensor;
 struct BQ76 battery_monitor = {
     .adc_control = {
+        .ADC_ON  = 1,
         .CELL_SEL = CELL_1_6,
         .TS = BOTH,
     },
@@ -108,24 +109,25 @@ int main(void)
     /* USER CODE BEGIN WHILE */
     //float32_t current, pwr, vbus, vshunt;
     _DEBUG("Start measurements\n");
+    /*
     uint8_t transistors = 0x00;
     int i = 0;
     transistors = 0x01 << i;
     bq76_set_balancing_output(&battery_monitor, 0x01);
     _DEBUG("Balacing output: %d\n", transistors);
+    */
     while (1)
     {
-        //i = (i == 5) ? i + 1 : 0;
-        /*
-        ina226_get_vbus(&current_sensor, &vbus);
-        ina226_get_current(&current_sensor, &current);
-        ina226_get_vshunt(&current_sensor, &vshunt);
-        ina226_get_pwr(&current_sensor, &pwr);
-        _DEBUG("I: %.3f P: %.3f V_shunt: %.3f V_bus: %.3f\n", current, pwr, 
-                vshunt, vbus);
-        */
-
-
+        if(battery_monitor.data_conversion_ongoing){
+            _DEBUG("Battery monitor converting adc channels\n");
+        } else {
+            _DEBUG("cell 1: %.2f | cell 2: %.2f | cell 3: %.2f | cell 4: %.2f | cell 5: %.2f | cell 6: %.2f\n",
+                   battery_monitor.v_cells[0], battery_monitor.v_cells[1],
+                   battery_monitor.v_cells[2], battery_monitor.v_cells[3],
+                   battery_monitor.v_cells[4], battery_monitor.v_cells[5]);
+            bq76_swrqst_adc_convert(&battery_monitor);
+        }
+        HAL_Delay(10);
     }
     /* USER CODE END 3 */
 }
@@ -323,6 +325,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
     if(GPIO_Pin == BQ76_DRDY_Pin){
         bq76_read_cells(&battery_monitor);
+        battery_monitor.data_conversion_ongoing = 0;
     }
     if(GPIO_Pin == BQ76_ALERT_Pin){
         bq76_read_alert_reg(&battery_monitor);
