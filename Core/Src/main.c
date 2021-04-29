@@ -110,21 +110,21 @@ int main(void)
     //float32_t current, pwr, vbus, vshunt;
     _DEBUG("Start measurements\n");
     /*
-    uint8_t transistors = 0x00;
-    int i = 0;
-    transistors = 0x01 << i;
-    bq76_set_balancing_output(&battery_monitor, 0x01);
-    _DEBUG("Balacing output: %d\n", transistors);
-    */
+       uint8_t transistors = 0x00;
+       int i = 0;
+       transistors = 0x01 << i;
+       bq76_set_balancing_output(&battery_monitor, 0x01);
+       _DEBUG("Balacing output: %d\n", transistors);
+       */
     while (1)
     {
         if(battery_monitor.data_conversion_ongoing){
             _DEBUG("Battery monitor converting adc channels\n");
         } else {
             _DEBUG("cell 1: %.2f | cell 2: %.2f | cell 3: %.2f | cell 4: %.2f | cell 5: %.2f | cell 6: %.2f\n",
-                   battery_monitor.v_cells[0], battery_monitor.v_cells[1],
-                   battery_monitor.v_cells[2], battery_monitor.v_cells[3],
-                   battery_monitor.v_cells[4], battery_monitor.v_cells[5]);
+                    battery_monitor.v_cells[0], battery_monitor.v_cells[1],
+                    battery_monitor.v_cells[2], battery_monitor.v_cells[3],
+                    battery_monitor.v_cells[4], battery_monitor.v_cells[5]);
             bq76_swrqst_adc_convert(&battery_monitor);
         }
         HAL_Delay(10);
@@ -265,7 +265,20 @@ static void MX_GPIO_Init(void)
     __HAL_RCC_GPIOB_CLK_ENABLE();
 
     /*Configure GPIO pin Output Level */
+    HAL_GPIO_WritePin(SWT_GPIO_GPIO_Port, SWT_GPIO_Pin, GPIO_PIN_RESET);
+
+    /*Configure GPIO pin Output Level */
     HAL_GPIO_WritePin(BQ76_CS_GPIO_Port, BQ76_CS_Pin, GPIO_PIN_SET);
+
+    /*Configure GPIO pin Output Level */
+    HAL_GPIO_WritePin(BQ76_CONV_GPIO_Port, BQ76_CONV_Pin, GPIO_PIN_RESET);
+
+    /*Configure GPIO pin : SWT_GPIO_Pin */
+    GPIO_InitStruct.Pin = SWT_GPIO_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    HAL_GPIO_Init(SWT_GPIO_GPIO_Port, &GPIO_InitStruct);
 
     /*Configure GPIO pin : PDM_OUT_Pin */
     GPIO_InitStruct.Pin = PDM_OUT_Pin;
@@ -341,7 +354,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
 static void handle_bq76_alerts(struct BQ76 * device){
     uint8_t clear_alert_flags = 0;
-    
+
     if(device->alert_status.OT1){
         clear_alert_flags |= device->alert_status.OT1;
     }
