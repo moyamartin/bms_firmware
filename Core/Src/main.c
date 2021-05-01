@@ -77,7 +77,8 @@ int main(void)
             t1100US, t1100US, SHUNT_AND_BUS_CONT, DEFAULT);
     
     /* Initialize battery monitor */
-    bq76_init(&battery_monitor, 0x01, 60, 4.1f, 100, 2.5f, 100, 60, 60, 100);
+    bq76_init(&battery_monitor, 0x01, 60, MAX_VCELL, 100, MIN_VCELL, 100, 60, 
+              60, 100);
     __enable_irq();
     
     // Request for an adc conversion

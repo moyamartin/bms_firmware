@@ -1,6 +1,9 @@
 #ifndef _BATTERY_MODEL_H
 #define _BATTERY_MODEL_H
 
+#define MAX_VCELL   4.2f
+#define MIN_VCELL   2.5f
+
 #include <stdint.h>
 #include "kalman.h"
 
