@@ -16,20 +16,17 @@
  *
  ******************************************************************************
  */
-/* USER CODE END Header */
-/* Includes ------------------------------------------------------------------*/
 #include "battery_model.h"
+#include "battery_pack.h"
 #include "bq76pl536a.h"
 #include "ina226.h"
 #include "logging.h"
 #include "main.h"
 
-/* Private variables ---------------------------------------------------------*/
+struct Pack battery_pack;
 I2C_HandleTypeDef hi2c1;
-
 SPI_HandleTypeDef hspi1;
 
-/* USER CODE BEGIN PV */
 struct INA226 current_sensor;
 struct BQ76 battery_monitor = {
     .adc_control = {
@@ -44,24 +41,15 @@ struct BQ76 battery_monitor = {
         .CN = CELLS_6,
     },
 };
-/* USER CODE END PV */
 
-/* Private function prototypes -----------------------------------------------*/
+/* MCU Initialization functions */
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_SPI1_Init(void);
 
-/* USER CODE BEGIN PFP */
-
-/* USER CODE END PFP */
-
-/* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
-extern void initialise_monitor_handles(void);
 static void handle_bq76_faults(struct BQ76 * device);
 static void handle_bq76_alerts(struct BQ76 * device);
-/* USER CODE END 0 */
 
 /**
  * @brief  The application entry point.
@@ -69,72 +57,40 @@ static void handle_bq76_alerts(struct BQ76 * device);
  */
 int main(void)
 {
-    /* USER CODE BEGIN 1 */
-
-    /* USER CODE END 1 */
-
-    /* MCU Configuration--------------------------------------------------------*/
-
-    /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+    /* MCU Initialization */
     __disable_irq();
     HAL_Init();
-
-    /* USER CODE BEGIN Init */
-    initialise_monitor_handles();
-    /* USER CODE END Init */
 
     /* Configure the system clock */
     SystemClock_Config();
 
-    /* USER CODE BEGIN SysInit */
-
-    /* USER CODE END SysInit */
-
-    /* Initialize all configured peripherals */
+    /* Initialize GPIO */
     MX_GPIO_Init();
+    /* Initialize I2C1 */
     MX_I2C1_Init();
+    /* Initialize SPI1 */
     MX_SPI1_Init();
 
+    /* Initialize current sensor */
     ina226_reset(&current_sensor);
     ina226_init(&current_sensor, GND_GND_ADDRESS, 0.1, 3.2f, AVG1, 
             t1100US, t1100US, SHUNT_AND_BUS_CONT, DEFAULT);
+    
+    /* Initialize battery monitor */
     bq76_init(&battery_monitor, 0x01, 60, 4.1f, 100, 2.5f, 100, 60, 60, 100);
     __enable_irq();
 
-    /* USER CODE BEGIN 2 */
-
-    /* USER CODE END 2 */
-
     /* Infinite loop */
-    /* USER CODE BEGIN WHILE */
-    //float32_t current, pwr, vbus, vshunt;
     _DEBUG("Start measurements\n");
-    /*
-       uint8_t transistors = 0x00;
-       int i = 0;
-       transistors = 0x01 << i;
-       bq76_set_balancing_output(&battery_monitor, 0x01);
-       _DEBUG("Balacing output: %d\n", transistors);
-       */
     while (1)
     {
-        if(battery_monitor.data_conversion_ongoing){
-            _DEBUG("Battery monitor converting adc channels\n");
-        } else {
-            _DEBUG("cell 1: %.2f | cell 2: %.2f | cell 3: %.2f | cell 4: %.2f | cell 5: %.2f | cell 6: %.2f\n",
-                    battery_monitor.v_cells[0], battery_monitor.v_cells[1],
-                    battery_monitor.v_cells[2], battery_monitor.v_cells[3],
-                    battery_monitor.v_cells[4], battery_monitor.v_cells[5]);
-            bq76_swrqst_adc_convert(&battery_monitor);
-        }
-        HAL_Delay(10);
     }
-    /* USER CODE END 3 */
 }
 
 /**
- * @brief System Clock Configuration
- * @retval None
+ * @fn      SystemClock_Config
+ * @brief   System Clock Configuration
+ * @retval  None
  */
 void SystemClock_Config(void)
 {
@@ -177,20 +133,13 @@ void SystemClock_Config(void)
 
 
 /**
- * @brief I2C1 Initialization Function
- * @param None
-
-*/
+ * @fn      MX_ISC1_Init
+ * @brief   I2C1 Initialization Function
+ * @param   None
+ */
 static void MX_I2C1_Init(void)
 {
 
-    /* USER CODE BEGIN I2C1_Init 0 */
-
-    /* USER CODE END I2C1_Init 0 */
-
-    /* USER CODE BEGIN I2C1_Init 1 */
-
-    /* USER CODE END I2C1_Init 1 */
     hi2c1.Instance = I2C1;
     hi2c1.Init.ClockSpeed = 100000;
     hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
@@ -204,28 +153,17 @@ static void MX_I2C1_Init(void)
     {
         Error_Handler();
     }
-    /* USER CODE BEGIN I2C1_Init 2 */
-
-    /* USER CODE END I2C1_Init 2 */
 
 }
 
 /**
+ * @fn MX_SPI1_Init
  * @brief SPI1 Initialization Function
  * @param None
  * @retval None
  */
 static void MX_SPI1_Init(void)
 {
-
-    /* USER CODE BEGIN SPI1_Init 0 */
-
-    /* USER CODE END SPI1_Init 0 */
-
-    /* USER CODE BEGIN SPI1_Init 1 */
-
-    /* USER CODE END SPI1_Init 1 */
-    /* SPI1 parameter configuration*/
     hspi1.Instance = SPI1;
     hspi1.Init.Mode = SPI_MODE_MASTER;
     hspi1.Init.Direction = SPI_DIRECTION_2LINES;
@@ -242,16 +180,14 @@ static void MX_SPI1_Init(void)
     {
         Error_Handler();
     }
-    /* USER CODE BEGIN SPI1_Init 2 */
-
-    /* USER CODE END SPI1_Init 2 */
 
 }
 
 /**
- * @brief GPIO Initialization Function
- * @param None
- * @retval None
+ * @fn      MX_GPIO_Init
+ * @brief   GPIO Initialization Function
+ * @param   None
+ * @retval  None
  */
 static void MX_GPIO_Init(void)
 {
@@ -331,8 +267,6 @@ static void MX_GPIO_Init(void)
     HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 
 }
-
-/* USER CODE BEGIN 4 */
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
@@ -418,7 +352,6 @@ static void handle_bq76_faults(struct BQ76 * device)
     bq76_clear_fault_reg(device, clear_fault_flags);
 }
 
-/* USER CODE END 4 */
 
 /**
  * @brief  This function is executed in case of error occurrence.

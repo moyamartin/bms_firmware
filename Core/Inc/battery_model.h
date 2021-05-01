@@ -4,6 +4,12 @@
 #include <stdint.h>
 #include "kalman.h"
 
+typedef enum
+{
+    CELL_INIT_SUCCESS = 0,
+    CELL_INIT_FAILED,
+} cell_status;
+
 struct Cell {
 	struct KalmanFilter filter;
 	uint32_t current_soc_index;
@@ -21,8 +27,8 @@ struct Cell {
  *  @params[in] current: Measured circulating current of the cell
  *  @returns   	state of charge of the batter 
  */
-float32_t calculate_battery_soc(struct Cell * cell, float32_t voltage, 
-								float32_t current);
+float32_t calculate_cell_soc(struct Cell * cell, const float32_t voltage, 
+							 const float32_t current);
 
 /**
  *  @fn			init_battery_model 
@@ -38,8 +44,8 @@ float32_t calculate_battery_soc(struct Cell * cell, float32_t voltage,
  *  @params[in] kalman_filter Kalman Filter data structure
  *  @returns    kalman_filter_status
  */
-arm_status init_battery_model(struct Cell * cell, 
-		  					  float32_t open_circuit_voltage);
+cell_status init_cell_model(struct Cell * cell, 
+		  				    const float32_t open_circuit_voltage);
 							  
 
 /**
@@ -55,7 +61,7 @@ arm_status init_battery_model(struct Cell * cell,
  *	@params[in]	cell Cell data structure to modify
  *	@params[in] q_data float32_t array pointer to new data
  */
-void battery_model_set_q_data(struct Cell * cell, const float32_t * q_data);
+void cell_model_set_q_data(struct Cell * cell, const float32_t * q_data);
 
 /**
  *	@fn			battery_model_set_r_data
@@ -80,6 +86,6 @@ void battery_model_set_r_data(struct Cell * cell, const float32_t * r_data);
  *	@params[in]	cell Cell data structure to modify
  *	@returns State of charge of the battery
  */
-float32_t battery_model_get_soc(struct Cell * cell);
+float32_t cell_model_get_soc(struct Cell * cell);
 
 #endif 
