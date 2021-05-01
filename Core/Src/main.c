@@ -79,6 +79,15 @@ int main(void)
     /* Initialize battery monitor */
     bq76_init(&battery_monitor, 0x01, 60, 4.1f, 100, 2.5f, 100, 60, 60, 100);
     __enable_irq();
+    
+    // Request for an adc conversion
+    bq76_swrqst_adc_convert(&battery_monitor);
+    // Wait until the battery monitor finishes the conversion
+    while(!battery_pack.initialized &&
+          battery_monitor.data_conversion_ongoing);
+    // Assume that the latest value is the OCV voltage of each cell and
+    // initalized the battery pack
+    init_battery_pack(&battery_pack, battery_monitor.v_cells);
 
     /* Infinite loop */
     _DEBUG("Start measurements\n");
