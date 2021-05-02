@@ -68,8 +68,14 @@ void Error_Handler(void);
 #define PH0_OSC_IN_GPIO_Port GPIOH
 #define PH1_OSC_OUT_Pin GPIO_PIN_1
 #define PH1_OSC_OUT_GPIO_Port GPIOH
-#define PDM_OUT_Pin GPIO_PIN_3
-#define PDM_OUT_GPIO_Port GPIOC
+#define BQ24_PG_Pin GPIO_PIN_0
+#define BQ24_PG_GPIO_Port GPIOC
+#define BQ24_STAT2_Pin GPIO_PIN_1
+#define BQ24_STAT2_GPIO_Port GPIOC
+#define BQ24_STAT1_Pin GPIO_PIN_2
+#define BQ24_STAT1_GPIO_Port GPIOC
+#define BQ24_CE_Pin GPIO_PIN_3
+#define BQ24_CE_GPIO_Port GPIOC
 #define BQ76_CS_Pin GPIO_PIN_4
 #define BQ76_CS_GPIO_Port GPIOA
 #define BQ76_FAULT_Pin GPIO_PIN_4
