@@ -24,7 +24,7 @@ static void update_filter_params(struct KalmanFilter * filter,
 
 float32_t cell_model_get_soc(struct Cell * cell)
 {
-    return SOC_LUT[cell->current_soc_index];
+    return cell->filter.x_act_data[2];
 }
 
 cell_status init_cell_model(struct Cell * cell, 
