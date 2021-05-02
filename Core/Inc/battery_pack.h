@@ -42,7 +42,7 @@ pack_status init_battery_pack(struct Pack  * pack, const float32_t * v_cells);
  *  @params[in] i_pack: float32_t value of the actual circulating current
  *              through the battery pack
  */
-void calc_battery_pack_sock(struct Pack * battery_pack, 
-                            const float32_t * v_cells, const float32_t i_pack);
+void calc_battery_pack_soc(struct Pack * battery_pack, 
+                           const float32_t * v_cells, const float32_t i_pack);
 
 #endif /* battery_pack.h */

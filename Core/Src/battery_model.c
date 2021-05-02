@@ -22,6 +22,11 @@ static void update_filter_params(struct KalmanFilter * filter,
 	kalman_filter_modify_j_data(filter, &D_LUT[soc_index]);
 }
 
+float32_t cell_model_get_soc(struct Cell * cell)
+{
+    return SOC_LUT[cell->current_soc_index];
+}
+
 cell_status init_cell_model(struct Cell * cell, 
 						    float32_t open_circuit_voltage)
 {
@@ -48,7 +53,7 @@ cell_status init_cell_model(struct Cell * cell,
                           N_OUTPUTS) == KALMAN_FAILED_INIT){
         return CELL_INIT_FAILED;
     }
-    return CELL_INIT_FAILED;
+    return CELL_INIT_SUCCESS;
 }
 
 

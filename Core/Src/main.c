@@ -50,6 +50,7 @@ static void MX_SPI1_Init(void);
 
 static void handle_bq76_faults(struct BQ76 * device);
 static void handle_bq76_alerts(struct BQ76 * device);
+const float32_t v_cells_static_value[] = {3.5f, 3.5f, 3.5f, 3.5f, 3.5f, 3.5f};
 
 /**
  * @brief  The application entry point.
@@ -82,18 +83,31 @@ int main(void)
     __enable_irq();
     
     // Request for an adc conversion
+    /*
     bq76_swrqst_adc_convert(&battery_monitor);
     // Wait until the battery monitor finishes the conversion
     while(!battery_pack.initialized &&
           battery_monitor.data_conversion_ongoing);
     // Assume that the latest value is the OCV voltage of each cell and
     // initalized the battery pack
-    init_battery_pack(&battery_pack, battery_monitor.v_cells);
+    // */
+    init_battery_pack(&battery_pack, v_cells_static_value);
 
-    /* Infinite loop */
-    _DEBUG("Start measurements\n");
+    _DEBUG("Start measuring kalman\n");
     while (1)
     {
+        HAL_GPIO_WritePin(BQ24_STAT1_GPIO_Port, BQ24_STAT1_Pin, GPIO_PIN_SET);
+        calc_battery_pack_soc(&battery_pack, v_cells_static_value, 10.0f);
+        HAL_GPIO_WritePin(BQ24_STAT1_GPIO_Port, BQ24_STAT1_Pin, GPIO_PIN_RESET);
+        _DEBUG("soc1 %.2f | soc2 %.2f | soc3 %.2f | soc4 %.2f | soc5 %.2f | "
+                "soc6 %.2f\n",
+        cell_model_get_soc(&battery_pack.cells[0]), 
+        cell_model_get_soc(&battery_pack.cells[1]),      
+        cell_model_get_soc(&battery_pack.cells[2]),      
+        cell_model_get_soc(&battery_pack.cells[3]),      
+        cell_model_get_soc(&battery_pack.cells[4]),      
+        cell_model_get_soc(&battery_pack.cells[5]));
+        HAL_Delay(100);
     }
 }
 
