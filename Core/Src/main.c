@@ -25,9 +25,10 @@
 
 struct Pack battery_pack;
 I2C_HandleTypeDef hi2c1;
-DMA_HandleTypeDef hdma_i2c1_rx;
 
 SPI_HandleTypeDef hspi1;
+DMA_HandleTypeDef hdma_spi1_rx;
+DMA_HandleTypeDef hdma_spi1_tx;
 
 struct INA226 current_sensor;
 struct BQ76 battery_monitor = {
@@ -70,27 +71,30 @@ int main(void)
 
     /* Initialize GPIO */
     MX_GPIO_Init();
+    /* Initialize DMA */
+    MX_DMA_Init();
     /* Initialize I2C1 */
     MX_I2C1_Init();
     /* Initialize SPI1 */
     MX_SPI1_Init();
 
+
     /* Initialize current sensor */
     ina226_reset(&current_sensor);
     ina226_init(&current_sensor, GND_GND_ADDRESS, 0.1, 3.2f, AVG1, 
             t1100US, t1100US, SHUNT_AND_BUS_CONT, DEFAULT);
-    
+
     /* Initialize battery monitor */
     bq76_init(&battery_monitor, 0x01, 60, MAX_VCELL, 100, MIN_VCELL, 100, 60, 
-              60, 100);
+            60, 100);
     __enable_irq();
-    
+
     // Request for an adc conversion
     /*
-    bq76_swrqst_adc_convert(&battery_monitor);
+       bq76_swrqst_adc_convert(&battery_monitor);
     // Wait until the battery monitor finishes the conversion
     while(!battery_pack.initialized &&
-          battery_monitor.data_conversion_ongoing);
+    battery_monitor.data_conversion_ongoing);
     // Assume that the latest value is the OCV voltage of each cell and
     // initalized the battery pack
     // */
@@ -99,18 +103,24 @@ int main(void)
     _DEBUG("Start measuring kalman\n");
     while (1)
     {
-        HAL_GPIO_WritePin(BQ24_STAT1_GPIO_Port, BQ24_STAT1_Pin, GPIO_PIN_SET);
+        if(!battery_monitor.data_conversion_ongoing){
+            HAL_GPIO_WritePin(BQ24_STAT1_GPIO_Port, BQ24_STAT1_Pin, 
+                              GPIO_PIN_SET);
+            bq76_read_v_cells_dma(&battery_monitor);
+        }
+        /*
         calc_battery_pack_soc(&battery_pack, v_cells_static_value, 10.0f);
         HAL_GPIO_WritePin(BQ24_STAT1_GPIO_Port, BQ24_STAT1_Pin, GPIO_PIN_RESET);
         _DEBUG("soc1 %.2f | soc2 %.2f | soc3 %.2f | soc4 %.2f | soc5 %.2f | "
                 "soc6 %.2f\n",
-        cell_model_get_soc(&battery_pack.cells[0]), 
-        cell_model_get_soc(&battery_pack.cells[1]),      
-        cell_model_get_soc(&battery_pack.cells[2]),      
-        cell_model_get_soc(&battery_pack.cells[3]),      
-        cell_model_get_soc(&battery_pack.cells[4]),      
-        cell_model_get_soc(&battery_pack.cells[5]));
-        HAL_Delay(100);
+                cell_model_get_soc(&battery_pack.cells[0]), 
+                cell_model_get_soc(&battery_pack.cells[1]),      
+                cell_model_get_soc(&battery_pack.cells[2]),      
+                cell_model_get_soc(&battery_pack.cells[3]),      
+                cell_model_get_soc(&battery_pack.cells[4]),      
+                cell_model_get_soc(&battery_pack.cells[5]));
+        */
+        HAL_Delay(10);
     }
 }
 
@@ -180,7 +190,6 @@ static void MX_I2C1_Init(void)
     {
         Error_Handler();
     }
-
 }
 
 /**
@@ -192,149 +201,153 @@ static void MX_I2C1_Init(void)
 static void MX_SPI1_Init(void)
 {
 
-  /* USER CODE BEGIN SPI1_Init 0 */
+    /* USER CODE BEGIN SPI1_Init 0 */
 
-  /* USER CODE END SPI1_Init 0 */
+    /* USER CODE END SPI1_Init 0 */
 
-  /* USER CODE BEGIN SPI1_Init 1 */
+    /* USER CODE BEGIN SPI1_Init 1 */
 
-  /* USER CODE END SPI1_Init 1 */
-  /* SPI1 parameter configuration*/
-  hspi1.Instance = SPI1;
-  hspi1.Init.Mode = SPI_MODE_MASTER;
-  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
-  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
-  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
-  hspi1.Init.CLKPhase = SPI_PHASE_2EDGE;
-  hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_256;
-  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
-  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
-  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-  hspi1.Init.CRCPolynomial = 10;
-  if (HAL_SPI_Init(&hspi1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN SPI1_Init 2 */
+    /* USER CODE END SPI1_Init 1 */
+    /* SPI1 parameter configuration*/
+    hspi1.Instance = SPI1;
+    hspi1.Init.Mode = SPI_MODE_MASTER;
+    hspi1.Init.Direction = SPI_DIRECTION_2LINES;
+    hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+    hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+    hspi1.Init.CLKPhase = SPI_PHASE_2EDGE;
+    hspi1.Init.NSS = SPI_NSS_SOFT;
+    hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_256;
+    hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
+    hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+    hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+    hspi1.Init.CRCPolynomial = 10;
+    if (HAL_SPI_Init(&hspi1) != HAL_OK)
+    {
+        Error_Handler();
+    }
+    hspi1.hdmarx = &hdma_spi1_rx;
+    hspi1.hdmatx = &hdma_spi1_tx;
+    /* USER CODE BEGIN SPI1_Init 2 */
 
-  /* USER CODE END SPI1_Init 2 */
+    /* USER CODE END SPI1_Init 2 */
 
 }
 
 /**
-  * Enable DMA controller clock
-  */
+ * Enable DMA controller clock
+ */
 static void MX_DMA_Init(void)
 {
 
-  /* DMA controller clock enable */
-  __HAL_RCC_DMA1_CLK_ENABLE();
+    /* DMA controller clock enable */
+    __HAL_RCC_DMA2_CLK_ENABLE();
 
-  /* DMA interrupt init */
-  /* DMA1_Stream0_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
+    /* DMA interrupt init */
+    /* DMA2_Stream0_IRQn interrupt configuration */
+    HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
+    /* DMA2_Stream3_IRQn interrupt configuration */
+    HAL_NVIC_SetPriority(DMA2_Stream3_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(DMA2_Stream3_IRQn);
 
 }
 
 /**
- * @fn      MX_GPIO_Init
- * @brief   GPIO Initialization Function
- * @param   None
- * @retval  None
+ * @brief GPIO Initialization Function
+ * @param None
+ * @retval None
  */
 static void MX_GPIO_Init(void)
 {
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
 
-  /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOE_CLK_ENABLE();
-  __HAL_RCC_GPIOC_CLK_ENABLE();
-  __HAL_RCC_GPIOH_CLK_ENABLE();
-  __HAL_RCC_GPIOA_CLK_ENABLE();
-  __HAL_RCC_GPIOB_CLK_ENABLE();
+    /* GPIO Ports Clock Enable */
+    __HAL_RCC_GPIOE_CLK_ENABLE();
+    __HAL_RCC_GPIOC_CLK_ENABLE();
+    __HAL_RCC_GPIOH_CLK_ENABLE();
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+    __HAL_RCC_GPIOB_CLK_ENABLE();
 
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(SWT_GPIO_GPIO_Port, SWT_GPIO_Pin, GPIO_PIN_RESET);
+    /*Configure GPIO pin Output Level */
+    HAL_GPIO_WritePin(SWT_GPIO_GPIO_Port, SWT_GPIO_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(BQ24_STAT1_GPIO_Port, BQ24_STAT1_Pin, GPIO_PIN_RESET);
+    /*Configure GPIO pin Output Level */
+    HAL_GPIO_WritePin(BQ24_STAT1_GPIO_Port, BQ24_STAT1_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(BQ76_CS_GPIO_Port, BQ76_CS_Pin, GPIO_PIN_SET);
+    /*Configure GPIO pin Output Level */
+    HAL_GPIO_WritePin(BQ76_CS_GPIO_Port, BQ76_CS_Pin, GPIO_PIN_SET);
 
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(BQ76_CONV_GPIO_Port, BQ76_CONV_Pin, GPIO_PIN_RESET);
+    /*Configure GPIO pin Output Level */
+    HAL_GPIO_WritePin(BQ76_CONV_GPIO_Port, BQ76_CONV_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin : SWT_GPIO_Pin */
-  GPIO_InitStruct.Pin = SWT_GPIO_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-  HAL_GPIO_Init(SWT_GPIO_GPIO_Port, &GPIO_InitStruct);
+    /*Configure GPIO pin : SWT_GPIO_Pin */
+    GPIO_InitStruct.Pin = SWT_GPIO_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    HAL_GPIO_Init(SWT_GPIO_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : BQ24_PG_Pin BQ24_STAT2_Pin BQ24_CE_Pin */
-  GPIO_InitStruct.Pin = BQ24_PG_Pin|BQ24_STAT2_Pin|BQ24_CE_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+    /*Configure GPIO pins : BQ24_PG_Pin BQ24_STAT2_Pin BQ24_CE_Pin */
+    GPIO_InitStruct.Pin = BQ24_PG_Pin|BQ24_STAT2_Pin|BQ24_CE_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : BQ24_STAT1_Pin */
-  GPIO_InitStruct.Pin = BQ24_STAT1_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-  HAL_GPIO_Init(BQ24_STAT1_GPIO_Port, &GPIO_InitStruct);
+    /*Configure GPIO pin : BQ24_STAT1_Pin */
+    GPIO_InitStruct.Pin = BQ24_STAT1_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    HAL_GPIO_Init(BQ24_STAT1_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : BQ76_CS_Pin */
-  GPIO_InitStruct.Pin = BQ76_CS_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
-  HAL_GPIO_Init(BQ76_CS_GPIO_Port, &GPIO_InitStruct);
+    /*Configure GPIO pin : BQ76_CS_Pin */
+    GPIO_InitStruct.Pin = BQ76_CS_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
+    HAL_GPIO_Init(BQ76_CS_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : BQ76_FAULT_Pin BQ76_ALERT_Pin */
-  GPIO_InitStruct.Pin = BQ76_FAULT_Pin|BQ76_ALERT_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+    /*Configure GPIO pins : BQ76_FAULT_Pin BQ76_ALERT_Pin */
+    GPIO_InitStruct.Pin = BQ76_FAULT_Pin|BQ76_ALERT_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : BQ76_DRDY_Pin */
-  GPIO_InitStruct.Pin = BQ76_DRDY_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(BQ76_DRDY_GPIO_Port, &GPIO_InitStruct);
+    /*Configure GPIO pin : BQ76_DRDY_Pin */
+    GPIO_InitStruct.Pin = BQ76_DRDY_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    HAL_GPIO_Init(BQ76_DRDY_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : BQ76_CONV_Pin */
-  GPIO_InitStruct.Pin = BQ76_CONV_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(BQ76_CONV_GPIO_Port, &GPIO_InitStruct);
+    /*Configure GPIO pin : BQ76_CONV_Pin */
+    GPIO_InitStruct.Pin = BQ76_CONV_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(BQ76_CONV_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : BOOT1_Pin */
-  GPIO_InitStruct.Pin = BOOT1_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(BOOT1_GPIO_Port, &GPIO_InitStruct);
+    /*Configure GPIO pin : BOOT1_Pin */
+    GPIO_InitStruct.Pin = BOOT1_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    HAL_GPIO_Init(BOOT1_GPIO_Port, &GPIO_InitStruct);
 
-  /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+    /* EXTI interrupt init*/
+    HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(EXTI0_IRQn);
 
-  HAL_NVIC_SetPriority(EXTI4_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI4_IRQn);
+    HAL_NVIC_SetPriority(EXTI4_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(EXTI4_IRQn);
 
-  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+    HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
     if(GPIO_Pin == BQ76_DRDY_Pin){
-        bq76_read_cells(&battery_monitor);
+        bq76_read_v_cells(&battery_monitor);
         battery_monitor.data_conversion_ongoing = 0;
     }
     if(GPIO_Pin == BQ76_ALERT_Pin){
@@ -413,6 +426,13 @@ static void handle_bq76_faults(struct BQ76 * device)
         clear_fault_flags |= device->fault_status.CRC_BIT << 2;
     }
     bq76_clear_fault_reg(device, clear_fault_flags);
+}
+
+void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef * hspi)
+{
+
+    HAL_GPIO_WritePin(BQ24_STAT1_GPIO_Port, BQ24_STAT1_Pin, GPIO_PIN_RESET);
+    handle_bq76_dma_callback(&battery_monitor);
 }
 
 
