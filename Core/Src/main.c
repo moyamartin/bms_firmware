@@ -25,6 +25,8 @@
 
 struct Pack battery_pack;
 I2C_HandleTypeDef hi2c1;
+DMA_HandleTypeDef hdma_i2c1_rx;
+DMA_HandleTypeDef hdma_i2c1_tx;
 
 SPI_HandleTypeDef hspi1;
 DMA_HandleTypeDef hdma_spi1_rx;
@@ -106,20 +108,20 @@ int main(void)
         if(!battery_monitor.data_conversion_ongoing){
             HAL_GPIO_WritePin(BQ24_STAT1_GPIO_Port, BQ24_STAT1_Pin, 
                               GPIO_PIN_SET);
-            bq76_read_v_cells_dma(&battery_monitor);
+            ina226_get_vbus_dma(&current_sensor);
         }
         /*
-        calc_battery_pack_soc(&battery_pack, v_cells_static_value, 10.0f);
-        HAL_GPIO_WritePin(BQ24_STAT1_GPIO_Port, BQ24_STAT1_Pin, GPIO_PIN_RESET);
-        _DEBUG("soc1 %.2f | soc2 %.2f | soc3 %.2f | soc4 %.2f | soc5 %.2f | "
-                "soc6 %.2f\n",
-                cell_model_get_soc(&battery_pack.cells[0]), 
-                cell_model_get_soc(&battery_pack.cells[1]),      
-                cell_model_get_soc(&battery_pack.cells[2]),      
-                cell_model_get_soc(&battery_pack.cells[3]),      
-                cell_model_get_soc(&battery_pack.cells[4]),      
-                cell_model_get_soc(&battery_pack.cells[5]));
-        */
+           calc_battery_pack_soc(&battery_pack, v_cells_static_value, 10.0f);
+           HAL_GPIO_WritePin(BQ24_STAT1_GPIO_Port, BQ24_STAT1_Pin, GPIO_PIN_RESET);
+           _DEBUG("soc1 %.2f | soc2 %.2f | soc3 %.2f | soc4 %.2f | soc5 %.2f | "
+           "soc6 %.2f\n",
+           cell_model_get_soc(&battery_pack.cells[0]), 
+           cell_model_get_soc(&battery_pack.cells[1]),      
+           cell_model_get_soc(&battery_pack.cells[2]),      
+           cell_model_get_soc(&battery_pack.cells[3]),      
+           cell_model_get_soc(&battery_pack.cells[4]),      
+           cell_model_get_soc(&battery_pack.cells[5]));
+           */
         HAL_Delay(10);
     }
 }
@@ -241,8 +243,15 @@ static void MX_DMA_Init(void)
 
     /* DMA controller clock enable */
     __HAL_RCC_DMA2_CLK_ENABLE();
+    __HAL_RCC_DMA1_CLK_ENABLE();
 
     /* DMA interrupt init */
+    /* DMA1_Stream0_IRQn interrupt configuration */
+    HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
+    /* DMA1_Stream6_IRQn interrupt configuration */
+    HAL_NVIC_SetPriority(DMA1_Stream6_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(DMA1_Stream6_IRQn);
     /* DMA2_Stream0_IRQn interrupt configuration */
     HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
@@ -433,6 +442,13 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef * hspi)
 
     HAL_GPIO_WritePin(BQ24_STAT1_GPIO_Port, BQ24_STAT1_Pin, GPIO_PIN_RESET);
     handle_bq76_dma_callback(&battery_monitor);
+}
+
+void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef * hi2c)
+{
+    HAL_GPIO_WritePin(BQ24_STAT1_GPIO_Port, BQ24_STAT1_Pin, 
+                      GPIO_PIN_RESET);
+    handle_ina226_dma_callback(&current_sensor);
 }
 
 
