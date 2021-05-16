@@ -17,7 +17,7 @@
 
 #include "arm_math.h"
 #include "definitions.h"
-#include <stdint.h>
+
 
 #define MATRIX_MAX_SIZE 64
 #define VECTOR_MAX_SIZE 8
