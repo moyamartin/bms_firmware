@@ -11,17 +11,6 @@
  * @copyright GPL license, all text here must be included in any redistribution
  ****************************************************************************
  */
-
- 
-
-
- /**
-  *	@typedef    Equalizer
-  *
-  *	@brief      This typedef defines the state of finite state machine of the Battery Equalizator. It states
-  *	            in which step of the process it has failed
-  */
-
 #ifndef _FSM_BALANCER_H
 #define _FSM_BALANCER_H
 
@@ -29,7 +18,7 @@
 #include "fsm.h"
 
 
-  // Balancer object structure
+// Balancer object structure
 typedef struct
 {
     INT DummyInt;
