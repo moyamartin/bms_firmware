@@ -40,3 +40,6 @@ Sessionx.vim
 tags
 ## Persistent undo
 [._]*.un~
+
+## Visual Studio 2019
+.vs/
