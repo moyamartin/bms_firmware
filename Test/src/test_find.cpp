@@ -5,7 +5,8 @@ extern "C"{
 }
 
 // create a test group
-TEST_GROUP(find_test){
+TEST_GROUP(find_test)
+{
 	void setUp(){
 
 	}

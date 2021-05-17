@@ -10,10 +10,6 @@ void _SM_ExternalEvent(SM_StateMachine* self,
     // Check if the new state is ignore
     if (newState == EVENT_IGNORED) 
     {
-        // Just delete the event data, if any
-        if (pEventData){
-            free(pEventData);
-        }
     } else {
         // TODO - capture software lock here for thread-safety if necessary
 
@@ -73,12 +69,6 @@ void _SM_StateEngine(SM_StateMachine* self,
         assert(state != NULL);
         state(self, pDataTemp);
 
-        // If event data was used, then delete it
-        if (pDataTemp)
-        {
-            free(pDataTemp);
-            pDataTemp = NULL;
-        }
     }
 }
 
@@ -142,11 +132,5 @@ void _SM_StateEngineEx(SM_StateMachine* self, const SM_StateMachineConst* selfCo
             state(self, pDataTemp);
         }
 
-        // If event data was used, then delete it
-        if (pDataTemp)
-        {
-            free(pDataTemp);
-            pDataTemp = NULL;
-        }
     }
 }
