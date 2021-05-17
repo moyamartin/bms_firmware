@@ -136,6 +136,9 @@ void _SM_StateEngineEx(SM_StateMachine* self,
     SM_StateMachine _smName_##Obj = { #_smName_, _instance_, \
         0, 0, 0, 0 }; 
 
+#define SM_GET_CURRENT_STATE(_smName_) \
+    _smName_##Obj.currentState
+
 #define EVENT_DECLARE(_eventFunc_, _eventData_) \
     void _eventFunc_(SM_StateMachine* self, _eventData_* pEventData);
 
@@ -203,6 +206,5 @@ void _SM_StateEngineEx(SM_StateMachine* self,
     }; \
     _SM_ExternalEvent(self, &_smName_##Const, TRANSITIONS[self->currentState], _eventData_); \
     assert((sizeof(TRANSITIONS)/sizeof(uint8_t)) == (sizeof(_smName_##StateMap)/sizeof(_smName_##StateMap[0])));
-
 
 #endif /* fms.h */

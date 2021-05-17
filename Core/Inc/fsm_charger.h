@@ -11,6 +11,15 @@
 #define V_LOWV 20.0f
 #define V_RECH 21.0f
 
+enum ChrgStates
+{
+    CHRG_IDLE,
+    CHRG_START,
+    CHRG_PRECHARGE,
+    CHRG_CC,
+    CHRG_CV,
+};
+
 /**
  * @struct  Charger
  * @brief   This struct hold

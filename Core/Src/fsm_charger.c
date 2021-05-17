@@ -1,16 +1,6 @@
 #include "fsm.h"
 #include "fsm_charger.h"
-#include "logging.h"
 #include <assert.h>
-
-enum ChrgStates
-{
-    CHRG_IDLE,
-    CHRG_START,
-    CHRG_PRECHARGE,
-    CHRG_CC,
-    CHRG_CV,
-};
 
 STATE_DECLARE(idle)
 STATE_DECLARE(start)
@@ -46,13 +36,15 @@ EVENT_DEFINE(CHRG_start_charge, ChargerData)
 
 STATE_DEFINE(idle)
 {
-    _DEBUG("CHRG IDLE");
+    Charger * pInstance = SM_GetInstance(Charger);
+    if(pEventData != NULL){
+        ChargerData * charger_data = (ChargerData *) pEventData;
+        pInstance->current_status_flags = charger_data->status_flags;
+    }
 }
 
 STATE_DEFINE(start)
 {
-    _DEBUG("CHRG START");
-    _DEBUG("Evaluating charge phase");
 
     // Assert that the data structure pased to this state is valid
     assert(pEventData != NULL);
@@ -62,13 +54,12 @@ STATE_DEFINE(start)
     pInstance->current_status_flags = charger_data->status_flags;
 
     if(charger_data->pack_soc == 1){
-        _DEBUG("CHRG NOT READY");
-        SM_InternalEvent(CHRG_IDLE, NULL);
+        SM_InternalEvent(CHRG_IDLE, pEventData);
     } else {
         // The next phase charge will depend on the pack voltage
         if(charger_data->pack_voltage < V_LOWV){
             // In this case goes to precharge mode
-            SM_InternalEvent(CHRG_PRECHARGE, NULL);
+            SM_InternalEvent(CHRG_PRECHARGE, pEventData);
         } else if(charger_data-> pack_voltage < V_RECH){
             // In this case goes to CC mode
             SM_InternalEvent(CHRG_CC, NULL);
@@ -81,7 +72,6 @@ STATE_DEFINE(start)
 
 STATE_DEFINE(precharge)
 {
-    _DEBUG("CHRG PRECHARGING");
     
     ChargerData * charger_data = (ChargerData *) pEventData;
     Charger * pInstance = SM_GetInstance(Charger);
@@ -97,7 +87,6 @@ STATE_DEFINE(precharge)
 
 STATE_DEFINE(cc)
 {
-    _DEBUG("CHRG CC");
     ChargerData * charger_data = (ChargerData *) pEventData;
     if(charger_data->pack_voltage > V_RECH){
         SM_InternalEvent(CHRG_CV, NULL);
@@ -106,7 +95,6 @@ STATE_DEFINE(cc)
 
 STATE_DEFINE(cv)
 {
-    _DEBUG("CHRG CV");
     ChargerData * charger_data = (ChargerData *) pEventData;
     if(charger_data->pack_soc == 1){
         SM_InternalEvent(CHRG_IDLE, NULL);
