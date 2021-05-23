@@ -43,7 +43,7 @@ struct BQ76 battery_monitor = {
     .function_config = {
         .CN = CELLS_6,
     }
-}
+};
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
 
@@ -79,6 +79,10 @@ int main(void)
     MX_I2C1_Init();
     /* Initialize SPI1 */
     MX_SPI1_Init();
+    /* Initialize TIM3 */
+    MX_TIM3_Init();
+    /* Initilize TIM4 */
+    MX_TIM4_Init();
 
 
     /* Initialize current sensor */
@@ -92,37 +96,20 @@ int main(void)
     __enable_irq();
 
     // Request for an adc conversion
-    /*
-       bq76_swrqst_adc_convert(&battery_monitor);
+    bq76_swrqst_adc_convert(&battery_monitor);
     // Wait until the battery monitor finishes the conversion
-    while(!battery_pack.initialized &&
-    battery_monitor.data_conversion_ongoing);
+    while(!battery_pack.initialized && 
+          battery_monitor.data_conversion_ongoing);
     // Assume that the latest value is the OCV voltage of each cell and
     // initalized the battery pack
-    // */
-    init_battery_pack(&battery_pack, v_cells_static_value);
+    init_battery_pack(&battery_pack, battery_monitor.v_cells);
 
-    _DEBUG("Start measuring kalman\n");
+    // start TIM3
+    // TIM4 is configured to start when TIM3 finishes
+    HAL_TIM_Base_Start_IT(&htim3);
+
     while (1)
     {
-        if(!battery_monitor.data_conversion_ongoing){
-            HAL_GPIO_WritePin(BQ24_STAT1_GPIO_Port, BQ24_STAT1_Pin, 
-                              GPIO_PIN_SET);
-            ina226_get_vbus_dma(&current_sensor);
-        }
-        /*
-           calc_battery_pack_soc(&battery_pack, v_cells_static_value, 10.0f);
-           HAL_GPIO_WritePin(BQ24_STAT1_GPIO_Port, BQ24_STAT1_Pin, GPIO_PIN_RESET);
-           _DEBUG("soc1 %.2f | soc2 %.2f | soc3 %.2f | soc4 %.2f | soc5 %.2f | "
-           "soc6 %.2f\n",
-           cell_model_get_soc(&battery_pack.cells[0]), 
-           cell_model_get_soc(&battery_pack.cells[1]),      
-           cell_model_get_soc(&battery_pack.cells[2]),      
-           cell_model_get_soc(&battery_pack.cells[3]),      
-           cell_model_get_soc(&battery_pack.cells[4]),      
-           cell_model_get_soc(&battery_pack.cells[5]));
-           */
-        HAL_Delay(10);
     }
 }
 
@@ -273,9 +260,18 @@ static void MX_TIM3_Init(void)
  */
 static void MX_TIM4_Init(void)
 {
+    /* USER CODE BEGIN TIM4_Init 0 */
+
+    /* USER CODE END TIM4_Init 0 */
+
+    TIM_ClockConfigTypeDef sClockSourceConfig = {0};
     TIM_SlaveConfigTypeDef sSlaveConfig = {0};
     TIM_MasterConfigTypeDef sMasterConfig = {0};
+    TIM_IC_InitTypeDef sConfigIC = {0};
 
+    /* USER CODE BEGIN TIM4_Init 1 */
+
+    /* USER CODE END TIM4_Init 1 */
     htim4.Instance = TIM4;
     htim4.Init.Prescaler = 83;
     htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
@@ -283,6 +279,15 @@ static void MX_TIM4_Init(void)
     htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
     htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
     if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
+    {
+        Error_Handler();
+    }
+    sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+    if (HAL_TIM_ConfigClockSource(&htim4, &sClockSourceConfig) != HAL_OK)
+    {
+        Error_Handler();
+    }
+    if (HAL_TIM_IC_Init(&htim4) != HAL_OK)
     {
         Error_Handler();
     }
@@ -298,7 +303,20 @@ static void MX_TIM4_Init(void)
     {
         Error_Handler();
     }
+    sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_RISING;
+    sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI;
+    sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
+    sConfigIC.ICFilter = 0;
+    if (HAL_TIM_IC_ConfigChannel(&htim4, &sConfigIC, TIM_CHANNEL_2) != HAL_OK)
+    {
+        Error_Handler();
+    }
+    /* USER CODE BEGIN TIM4_Init 2 */
+
+    /* USER CODE END TIM4_Init 2 */
 }
+
+
 
 /**
  * Enable DMA controller clock
@@ -424,12 +442,10 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     }
     if(GPIO_Pin == BQ76_ALERT_Pin){
         bq76_read_alert_reg(&battery_monitor);
-        handle_bq76_alerts(&battery_monitor);
         bq76_read_alert_reg(&battery_monitor);
     }
     if(GPIO_Pin == BQ76_FAULT_Pin){
         bq76_read_fault_reg(&battery_monitor);
-        handle_bq76_faults(&battery_monitor);
         bq76_read_fault_reg(&battery_monitor);
     }
 }
@@ -512,6 +528,16 @@ void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef * hi2c)
     HAL_GPIO_WritePin(BQ24_STAT1_GPIO_Port, BQ24_STAT1_Pin, 
                       GPIO_PIN_RESET);
     handle_ina226_dma_callback(&current_sensor);
+}
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef * htim)
+{
+    if(htim == &htim3){
+        HAL_GPIO_WritePin(BQ24_STAT1_GPIO_Port, BQ24_STAT1_Pin, GPIO_PIN_SET);
+    } else {
+        HAL_GPIO_WritePin(BQ24_STAT1_GPIO_Port, BQ24_STAT1_Pin, 
+                          GPIO_PIN_RESET);
+    }
 }
 
 
