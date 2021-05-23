@@ -320,6 +320,33 @@ static void MX_GPIO_Init(void)
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(BOOT1_GPIO_Port, &GPIO_InitStruct);
 
+    /*Configure GPIO pin : BQ24_PG_Pin  */
+    GPIO_InitStruct.Pin = BQ24_PG_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    HAL_GPIO_Init(BQ24_PG_GPIO_Port, &GPIO_InitStruct);
+
+    /*Configure GPIO pin : BQ24_STAT1_Pin  */
+    GPIO_InitStruct.Pin = BQ24_STAT1_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    HAL_GPIO_Init(BQ24_STAT1_GPIO_Port, &GPIO_InitStruct);
+
+    /*Configure GPIO pin : BQ24_STAT2_Pin  */
+    GPIO_InitStruct.Pin = BQ24_STAT2_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    HAL_GPIO_Init(BQ24_STAT2_GPIO_Port, &GPIO_InitStruct);
+
+    /*Configure GPIO pin Output Level */
+    HAL_GPIO_WritePin(SBQ24_CE_GPIO_Port, BQ24_CE_Pin, GPIO_PIN_RESET);
+
+    /*Configure GPIO pin : BQ24_CE_Pin  */
+    GPIO_InitStruct.Pin = BQ24_CE_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    HAL_GPIO_Init(BQ24_CE_GPIO_Port, &GPIO_InitStruct);
+
     /* EXTI interrupt init*/
     HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(EXTI0_IRQn);

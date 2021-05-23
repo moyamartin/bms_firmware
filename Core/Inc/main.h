@@ -83,6 +83,14 @@ void Error_Handler(void);
 #define BQ76_DRDY_EXTI_IRQn EXTI0_IRQn
 #define BQ76_CONV_Pin GPIO_PIN_1
 #define BQ76_CONV_GPIO_Port GPIOB
+#define BQ24_PG_Pin GPIO_PIN_0
+#define BQ24_PG_GPIO_Port GPIOC
+#define BQ24_STAT1_Pin GPIO_PIN_2
+#define BQ24_STAT1_GPIO_Port GPIOC
+#define BQ24_STAT2_Pin GPIO_PIN_1
+#define BQ24_STAT2_GPIO_Port GPIOC
+#define BQ24_CE_Pin GPIO_PIN_3
+#define BQ24_CE_GPIO_Port GPIOC
 #define BOOT1_Pin GPIO_PIN_2
 #define BOOT1_GPIO_Port GPIOB
 #define SWDIO_Pin GPIO_PIN_13
