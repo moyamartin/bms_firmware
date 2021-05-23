@@ -1,4 +1,3 @@
-/* USER CODE BEGIN Header */
 /**
  ******************************************************************************
  * @file           : main.c
@@ -6,7 +5,7 @@
  ******************************************************************************
  * @attention
  *
- * <h2><center>&copy; Copyright (c) 2020 STMicroelectronics.
+ * <h2><center>&copy; Copyright (c) 2021 STMicroelectronics.
  * All rights reserved.</center></h2>
  *
  * This software component is licensed by ST under BSD 3-Clause license,
@@ -23,7 +22,6 @@
 #include "logging.h"
 #include "main.h"
 
-struct Pack battery_pack;
 I2C_HandleTypeDef hi2c1;
 DMA_HandleTypeDef hdma_i2c1_rx;
 DMA_HandleTypeDef hdma_i2c1_tx;
@@ -32,10 +30,10 @@ SPI_HandleTypeDef hspi1;
 DMA_HandleTypeDef hdma_spi1_rx;
 DMA_HandleTypeDef hdma_spi1_tx;
 
+struct Pack battery_pack;
 struct INA226 current_sensor;
 struct BQ76 battery_monitor = {
     .adc_control = {
-        .ADC_ON  = 1,
         .CELL_SEL = CELL_1_6,
         .TS = BOTH,
     },
@@ -44,19 +42,20 @@ struct BQ76 battery_monitor = {
     },
     .function_config = {
         .CN = CELLS_6,
-    },
-};
+    }
+}
+TIM_HandleTypeDef htim3;
+TIM_HandleTypeDef htim4;
 
-/* MCU Initialization functions */
+
+/* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_SPI1_Init(void);
-
-static void handle_bq76_faults(struct BQ76 * device);
-static void handle_bq76_alerts(struct BQ76 * device);
-const float32_t v_cells_static_value[] = {3.5f, 3.5f, 3.5f, 3.5f, 3.5f, 3.5f};
+static void MX_TIM3_Init(void);
+static void MX_TIM4_Init(void);
 
 /**
  * @brief  The application entry point.
@@ -64,13 +63,14 @@ const float32_t v_cells_static_value[] = {3.5f, 3.5f, 3.5f, 3.5f, 3.5f, 3.5f};
  */
 int main(void)
 {
-    /* MCU Initialization */
-    __disable_irq();
-    HAL_Init();
 
+    /* disable irq */
+    __disable_irq();
+    /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+    HAL_Init();
     /* Configure the system clock */
     SystemClock_Config();
-
+    /* Initialize all configured peripherals */
     /* Initialize GPIO */
     MX_GPIO_Init();
     /* Initialize DMA */
@@ -229,10 +229,75 @@ static void MX_SPI1_Init(void)
     }
     hspi1.hdmarx = &hdma_spi1_rx;
     hspi1.hdmatx = &hdma_spi1_tx;
-    /* USER CODE BEGIN SPI1_Init 2 */
 
-    /* USER CODE END SPI1_Init 2 */
+}
 
+
+/**
+ * @brief TIM3 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_TIM3_Init(void)
+{
+    TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+    TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+    htim3.Instance = TIM3;
+    htim3.Init.Prescaler = 83;
+    htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+    htim3.Init.Period = 9999;
+    htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+    htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+    if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
+    {
+        Error_Handler();
+    }
+    sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+    if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK)
+    {
+        Error_Handler();
+    }
+    sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
+    sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+    if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+    {
+        Error_Handler();
+    }
+}
+
+/**
+ * @brief TIM4 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_TIM4_Init(void)
+{
+    TIM_SlaveConfigTypeDef sSlaveConfig = {0};
+    TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+    htim4.Instance = TIM4;
+    htim4.Init.Prescaler = 83;
+    htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
+    htim4.Init.Period = 102;
+    htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+    htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+    if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
+    {
+        Error_Handler();
+    }
+    sSlaveConfig.SlaveMode = TIM_SLAVEMODE_TRIGGER;
+    sSlaveConfig.InputTrigger = TIM_TS_ITR2;
+    if (HAL_TIM_SlaveConfigSynchro(&htim4, &sSlaveConfig) != HAL_OK)
+    {
+        Error_Handler();
+    }
+    sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+    sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+    if (HAL_TIMEx_MasterConfigSynchronization(&htim4, &sMasterConfig) != HAL_OK)
+    {
+        Error_Handler();
+    }
 }
 
 /**
@@ -240,7 +305,6 @@ static void MX_SPI1_Init(void)
  */
 static void MX_DMA_Init(void)
 {
-
     /* DMA controller clock enable */
     __HAL_RCC_DMA2_CLK_ENABLE();
     __HAL_RCC_DMA1_CLK_ENABLE();
@@ -258,7 +322,6 @@ static void MX_DMA_Init(void)
     /* DMA2_Stream3_IRQn interrupt configuration */
     HAL_NVIC_SetPriority(DMA2_Stream3_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(DMA2_Stream3_IRQn);
-
 }
 
 /**
