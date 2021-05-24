@@ -56,6 +56,8 @@ static void MX_I2C1_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_TIM4_Init(void);
+static void handle_bq76_faults(struct BQ76 * device);
+static void handle_bq76_alerts(struct BQ76 * device);
 
 /**
  * @brief  The application entry point.
@@ -104,8 +106,7 @@ int main(void)
     // initalized the battery pack
     init_battery_pack(&battery_pack, battery_monitor.v_cells);
 
-    // start TIM3
-    // TIM4 is configured to start when TIM3 finishes
+    // start TIM3 -> 9525ms
     HAL_TIM_Base_Start_IT(&htim3);
 
     while (1)
@@ -233,7 +234,7 @@ static void MX_TIM3_Init(void)
     htim3.Instance = TIM3;
     htim3.Init.Prescaler = 83;
     htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-    htim3.Init.Period = 9999;
+    htim3.Init.Period = 9524;
     htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
     htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
     if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
@@ -265,9 +266,7 @@ static void MX_TIM4_Init(void)
     /* USER CODE END TIM4_Init 0 */
 
     TIM_ClockConfigTypeDef sClockSourceConfig = {0};
-    TIM_SlaveConfigTypeDef sSlaveConfig = {0};
     TIM_MasterConfigTypeDef sMasterConfig = {0};
-    TIM_IC_InitTypeDef sConfigIC = {0};
 
     /* USER CODE BEGIN TIM4_Init 1 */
 
@@ -291,29 +290,12 @@ static void MX_TIM4_Init(void)
     {
         Error_Handler();
     }
-    sSlaveConfig.SlaveMode = TIM_SLAVEMODE_TRIGGER;
-    sSlaveConfig.InputTrigger = TIM_TS_ITR2;
-    if (HAL_TIM_SlaveConfigSynchro(&htim4, &sSlaveConfig) != HAL_OK)
-    {
-        Error_Handler();
-    }
-    sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+    sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
     sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
     if (HAL_TIMEx_MasterConfigSynchronization(&htim4, &sMasterConfig) != HAL_OK)
     {
         Error_Handler();
     }
-    sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_RISING;
-    sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI;
-    sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
-    sConfigIC.ICFilter = 0;
-    if (HAL_TIM_IC_ConfigChannel(&htim4, &sConfigIC, TIM_CHANNEL_2) != HAL_OK)
-    {
-        Error_Handler();
-    }
-    /* USER CODE BEGIN TIM4_Init 2 */
-
-    /* USER CODE END TIM4_Init 2 */
 }
 
 
@@ -442,10 +424,12 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     }
     if(GPIO_Pin == BQ76_ALERT_Pin){
         bq76_read_alert_reg(&battery_monitor);
+        handle_bq76_alerts(&battery_monitor);
         bq76_read_alert_reg(&battery_monitor);
     }
     if(GPIO_Pin == BQ76_FAULT_Pin){
         bq76_read_fault_reg(&battery_monitor);
+        handle_bq76_faults(&battery_monitor);
         bq76_read_fault_reg(&battery_monitor);
     }
 }
@@ -519,24 +503,28 @@ static void handle_bq76_faults(struct BQ76 * device)
 void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef * hspi)
 {
 
-    HAL_GPIO_WritePin(BQ24_STAT1_GPIO_Port, BQ24_STAT1_Pin, GPIO_PIN_RESET);
     handle_bq76_dma_callback(&battery_monitor);
 }
 
 void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef * hi2c)
 {
-    HAL_GPIO_WritePin(BQ24_STAT1_GPIO_Port, BQ24_STAT1_Pin, 
-                      GPIO_PIN_RESET);
     handle_ina226_dma_callback(&current_sensor);
 }
 
+
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef * htim)
 {
+    // After 9525uS has passed read the current with dma
     if(htim == &htim3){
-        HAL_GPIO_WritePin(BQ24_STAT1_GPIO_Port, BQ24_STAT1_Pin, GPIO_PIN_SET);
-    } else {
-        HAL_GPIO_WritePin(BQ24_STAT1_GPIO_Port, BQ24_STAT1_Pin, 
-                          GPIO_PIN_RESET);
+        //ina226_get_current_dma(&current_sensor);
+        HAL_TIM_Base_Stop_IT(htim);
+        HAL_TIM_Base_Start_IT(&htim4);
+    } 
+    // After 103uS read the battery_monitor v_cells
+    if(htim == &htim4){
+        //bq76__read_v_cells_dma(&battery_monitor):
+        HAL_TIM_Base_Stop_IT(htim);
+        HAL_TIM_Base_Start_IT(&htim3);
     }
 }
 
