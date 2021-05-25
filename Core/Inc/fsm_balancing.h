@@ -16,7 +16,7 @@
 
 #include "DataTypes.h"
 #include "fsm.h"
-
+#include "battery_pack.h"
 
 // Balancer object structure
 typedef struct
@@ -30,12 +30,24 @@ typedef struct
     INT DummyInt;
 } FSM_BALANC_Data;
 
+/**
+ *  @fn			IsDisbalanced
+ *  @brief      Given an Pack structure which contains the SoC of #SERIES_CELLS number of
+ *              cells, this will return 1 if the pack is balanced.              
+ *  @params[in]	pack: struct Pack to detect disbalance.
+ */
+bool IsDisbalanced(Struct *Pack pack);
 
-/*
-// State machine event functions
-EVENT_DECLARE(MTR_SetSpeed, MotorData)
-EVENT_DECLARE(MTR_Halt, NoEventData)
-*/
+/**
+ *  @fn			Balance_transistors
+ *  @brief      Given an Pack structure which contains the SoC of #SERIES_CELLS number of
+ *              cells, this will return an uint8_t whose internal bit correspond to the
+ *              ByPass Transistors to be activated for balancing purposes              
+ *  @params[in]	pack: struct Pack to set ByPass Transistors.
+ */
+uint8_t Balance_transistors(Struct *Pack pack);
+
+
 
 //state machine event functions
 EVENT_DECLARE(BALANC_CV_Charging,NoEventData)

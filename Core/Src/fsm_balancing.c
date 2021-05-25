@@ -6,9 +6,34 @@
 
  */
 
+#DEFINE DISBALANCED_THRESHOLD 0.02
+
 #include "fsm_balancing.h"
 #include "fsm.h"
 #include <stdio.h>
+
+
+bool IsDisbalanced(Struct *Pack pack){
+    float32_t buffer[SERIES_CELLS];
+    uint32_t max_index,min_index;
+     for(int i = 0; i < SERIES_CELLS; ++i){
+         buffer[i]=battery_model_get_soc(&(pack->cells[i]))
+     }
+
+
+    max_index=get_max_index_f32(buffer,SERIES_CELLS);
+    min_index=get_if_index_f32(buffer,SERIES_CELLS);
+
+    if ((buffer[max_index]-DISBALANCED_THRESHOLD)>buffer[min_index]){
+        return 1;
+    } 
+	else{
+        return 0;
+    }
+};
+
+
+uint8_t Balance_transistors(Struct *Pack pack);
 
 // State enumeration order must match the order of state
 //method entries in the state map
