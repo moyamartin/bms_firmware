@@ -549,13 +549,13 @@ enum BQ76_status bq76_read_v_cells(struct BQ76 * device)
         return BQ76_SPI_TRANSMISSION_ERROR;
     }
     calc_battery_voltages(device);
+    device->data_conversion_ongoing = 0;
     return BQ76_OK;
 }
 
 
 enum BQ76_status bq76_read_v_cells_dma(struct BQ76 * device)
 {
-    device->data_conversion_ongoing = 1;
     uint8_t n_cells = (device->adc_control.CELL_SEL + 1);
     if(readspi_dma((uint8_t) device->address_control.ADDR, VCELL1_LOW_REG,
                    2*n_cells, device->raw_v_cells) != BQ76_OK){
@@ -701,7 +701,6 @@ enum BQ76_status handle_bq76_dma_callback(struct BQ76 * monitor)
         case BQ76_V_CELLS: ;
             // before calculating new data and updating it, we need to check if
             // the crc is valid
-            monitor->data_conversion_ongoing = 0;
             uint8_t read_length = 2*(monitor->adc_control.CELL_SEL + 1);
             struct BQ76_read_packet_format packet = 
                 init_read_packet(monitor->address_control.ADDR, VCELL1_LOW_REG, 

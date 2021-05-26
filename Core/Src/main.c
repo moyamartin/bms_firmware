@@ -30,6 +30,7 @@ SPI_HandleTypeDef hspi1;
 DMA_HandleTypeDef hdma_spi1_rx;
 DMA_HandleTypeDef hdma_spi1_tx;
 
+uint8_t new_v_cell_data = 0, new_current_data = 0;
 struct Pack battery_pack;
 struct INA226 current_sensor;
 struct BQ76 battery_monitor = {
@@ -111,6 +112,17 @@ int main(void)
 
     while (1)
     {
+        if(new_v_cell_data && new_current_data){
+            new_v_cell_data = 0;
+            new_current_data = 0;
+            HAL_GPIO_WritePin(BQ24_STAT1_GPIO_Port, BQ24_STAT1_Pin, 
+                              GPIO_PIN_SET);
+            HAL_TIM_Base_Start_IT(&htim3);
+            calc_battery_pack_soc(&battery_pack, battery_monitor.v_cells, 
+                                  current_sensor.current);
+            HAL_GPIO_WritePin(BQ24_STAT1_GPIO_Port, BQ24_STAT1_Pin, 
+                              GPIO_PIN_RESET);
+        }
     }
 }
 
@@ -420,7 +432,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
     if(GPIO_Pin == BQ76_DRDY_Pin){
         bq76_read_v_cells(&battery_monitor);
-        battery_monitor.data_conversion_ongoing = 0;
     }
     if(GPIO_Pin == BQ76_ALERT_Pin){
         bq76_read_alert_reg(&battery_monitor);
@@ -502,12 +513,17 @@ static void handle_bq76_faults(struct BQ76 * device)
 
 void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef * hspi)
 {
-
+    if(battery_monitor.current_dma_request == BQ76_V_CELLS){
+        new_v_cell_data = 1;
+    }
     handle_bq76_dma_callback(&battery_monitor);
 }
 
 void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef * hi2c)
 {
+    if(current_sensor.dma_request == INA226_DMA_CURRENT){
+        new_current_data = 1;
+    }
     handle_ina226_dma_callback(&current_sensor);
 }
 
@@ -516,15 +532,16 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef * htim)
 {
     // After 9525uS has passed read the current with dma
     if(htim == &htim3){
-        //ina226_get_current_dma(&current_sensor);
+        HAL_GPIO_WritePin(BQ24_STAT1_GPIO_Port, BQ24_STAT1_Pin, 
+                          GPIO_PIN_SET);
+        ina226_get_current_dma(&current_sensor);
         HAL_TIM_Base_Stop_IT(htim);
         HAL_TIM_Base_Start_IT(&htim4);
     } 
     // After 103uS read the battery_monitor v_cells
     if(htim == &htim4){
-        //bq76__read_v_cells_dma(&battery_monitor):
+        bq76_read_v_cells_dma(&battery_monitor);
         HAL_TIM_Base_Stop_IT(htim);
-        HAL_TIM_Base_Start_IT(&htim3);
     }
 }
 
