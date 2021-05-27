@@ -48,6 +48,11 @@ struct BQ76 battery_monitor = {
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
 
+UART_HandleTypeDef huart5;
+
+/* USER CODE BEGIN PV */
+
+/* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
@@ -57,6 +62,13 @@ static void MX_I2C1_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_TIM4_Init(void);
+static void MX_UART5_Init(void);
+/* USER CODE BEGIN PFP */
+
+/* USER CODE END PFP */
+
+/* Private user code ---------------------------------------------------------*/
+/* USER CODE BEGIN 0 */
 static void handle_bq76_faults(struct BQ76 * device);
 static void handle_bq76_alerts(struct BQ76 * device);
 
