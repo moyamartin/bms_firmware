@@ -6,7 +6,7 @@
 
  */
 
-#DEFINE DISBALANCED_THRESHOLD 0.02
+#DEFINE DISBALANCED_THRESHOLD (0.02f)
 
 #include "fsm_balancing.h"
 #include "fsm.h"
@@ -24,6 +24,8 @@ bool IsDisbalanced(Struct *Pack pack){
     max_index=get_max_index_f32(buffer,SERIES_CELLS);
     min_index=get_if_index_f32(buffer,SERIES_CELLS);
 
+    /*Comparison between the most and the least charged cells if this difference is 
+    bigger than DISBALANCED_THRESHOLD the pack is declared unbalanced*/
     if ((buffer[max_index]-DISBALANCED_THRESHOLD)>buffer[min_index]){
         return 1;
     } 
@@ -33,7 +35,32 @@ bool IsDisbalanced(Struct *Pack pack){
 };
 
 
-uint8_t Balance_transistors(Struct *Pack pack);
+uint8_t Balance_transistors(Struct *Pack pack){
+    float32_t buffer[SERIES_CELLS];
+    uint32_t min_index;
+    uint8_t transistors=0;
+    
+     for(int i = 0; i < SERIES_CELLS; ++i){
+         buffer[i]=battery_model_get_soc(&(pack->cells[i]))
+     }
+
+    min_index=get_if_index_f32(buffer,SERIES_CELLS);
+    
+        for(int i = 0; i < SERIES_CELLS; ++i){
+            if (buffer[min_index]+DISBALANCED_THRESHOLD<buffer[i]){
+                		
+			transistors = transistors | 1;
+		    }
+
+		    if (i < SERIES_CELLS-1) {
+			transistors = transistors << 1;
+		    }
+
+        }
+    }
+return transistors
+
+};
 
 // State enumeration order must match the order of state
 //method entries in the state map
