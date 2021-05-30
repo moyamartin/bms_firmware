@@ -339,7 +339,7 @@ static void MX_GPIO_Init(void)
     HAL_GPIO_Init(BQ24_STAT2_GPIO_Port, &GPIO_InitStruct);
 
     /*Configure GPIO pin Output Level */
-    HAL_GPIO_WritePin(SBQ24_CE_GPIO_Port, BQ24_CE_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(BQ24_CE_GPIO_Port, BQ24_CE_Pin, GPIO_PIN_RESET);
 
     /*Configure GPIO pin : BQ24_CE_Pin  */
     GPIO_InitStruct.Pin = BQ24_CE_Pin;
