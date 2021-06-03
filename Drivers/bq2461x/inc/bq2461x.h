@@ -34,6 +34,27 @@
 	// AVR devices support
 #endif
 
+/**
+ * @struct BQ24_pin
+ * @brief struct that represents BQ2461x I/O pins
+ */
+struct BQ24_pin {
+    uint8_t logic;		// Pin ON Logic 
+    uint8_t (*peek)(void);
+    void (*set)(uint8_t);
+};
+
+/**
+ * @struct BQ24
+ * @brief BQ2461x handler
+ */
+struct BQ24 {
+    struct BQ24_pin PG;
+    struct BQ24_pin STAT1;
+    struct BQ24_pin STAT2;
+    struct BQ24_pin CE;
+};
+
 /* User Defined Functions ---------------------------------------------------*/
 
 /**
@@ -45,7 +66,7 @@
  * 		  functionalty for STM32F407xx.
  * @return uint8_t PG pin value
  */
-uint8_t _weak BQ24_read_PG(void); 
+uint8_t bq24_read_PG(void); 
 
 /**
  * @func  read_STAT1
@@ -56,7 +77,7 @@ uint8_t _weak BQ24_read_PG(void);
  * 		  functionalty for STM32F407xx.
  * @return uint8_t STAT1 pin value
  */
-uint8_t _weak BQ24_read_STAT1(void);
+uint8_t bq24_read_STAT1(void);
 
 /**
  * @func  read_STAT2
@@ -67,7 +88,7 @@ uint8_t _weak BQ24_read_STAT1(void);
  * 		  functionalty for STM32F407xx.
  * @return uint8_t STAT2 pin value
  */
-uint8_t _weak BQ24_read_STAT2(void);
+uint8_t bq24_read_STAT2(void);
 
 /**
  * @func  read_CE
@@ -78,7 +99,7 @@ uint8_t _weak BQ24_read_STAT2(void);
  * 		  functionalty for STM32F407xx.
  * @return uint8_t CE pin value
  */
-uint8_t _weak BQ24_read_CE(void);
+uint8_t bq24_read_CE(void);
 
 /**
  * @func  write_CE
@@ -88,60 +109,60 @@ uint8_t _weak BQ24_read_CE(void);
  * 		  implemented. As an example, we have only defined the
  * 		  functionalty for STM32F407xx.
  */
-void _weak BQ24_write_CE(uint8_t CE_Pin_State);
+void bq24_write_CE(uint8_t CE_Pin_State);
 
 /* End of User Defined Functions ---------------------------------------------*/
 
 /**
  * @func BQ24_read_charge_status
  * @brief Reads STAT1 & STATA2 pins & returns the BQ2461x chargien status.
- * @params[in] device: BQ24_handler pointer referencing to the desired BQ2461x
+ * @params[in] device: BQ24 handler pointer referencing to the desired BQ2461x
  *                     device
  * @return BQ24_charge_status [BQ24_CHARGE_COMPLETE|BQ24_CHARGE_IN_PROGRESS|
  *			       BQ24_FAULT|BQ24_INVALID_VALUE]
  */
-enum BQ24_charge_status BQ24_read_charge_status(struct BQ24_handler *device);
+enum BQ24_charge_status bq24_read_charge_status(struct BQ24 *device);
 
 /**
  * @func is_power_good
  * @brief Reads PG pin & returns the BQ2461x power state. If charger finds 
- * @params[in] device: BQ24_handler pointer referencing to the desired BQ2461x
+ * @params[in] device: BQ24 handler pointer referencing to the desired BQ2461x
  *                     device
  * @return PG_status [ VALID_VCC: bq24618 has a valid VCC input | INVALID_VCC]
  */
-enum BQ24_pg_status BQ24_is_power_good(struct BQ24_handler *device);
+enum BQ24_pg_status bq24_is_power_good(struct BQ24 *device);
 
 /**
  * @func is_charge_enabled
  * @brief Reads CE pin & returns the BQ2461x charge enable state
- * @params[in] device: BQ24_handler pointer referencing to the desired BQ2461x
+ * @params[in] device: BQ24 handler pointer referencing to the desired BQ2461x
  *                     device
  * @return CE_status [ ce_ON | ce_OFF ]
  */
-enum BQ24_ce_status BQ24_is_charge_enabled(struct BQ24_handler *device);
+enum BQ24_ce_status bq24_is_charge_enabled(struct BQ24 *device);
 
 /**
  * @func enable_charge
  * @brief Sets CE pin to ce_ON status
- * @params[in] device: BQ24_handler pointer referencing to the desired BQ2461x
+ * @params[in] device: BQ24 handler pointer referencing to the desired BQ2461x
  *                     device
  * @return CE_status [ ce_ON | ce_OFF ]
  */
-enum BQ24_ce_status BQ24_enable_charge(struct BQ24_handler *device);
+enum BQ24_ce_status bq24_enable_charge(struct BQ24 *device);
 
 /**
  * @func disable_charge
  * @brief Sets CE pin to ce_OFF status
- * @params[in] device: BQ24_handler pointer referencing to the desired BQ2461x
+ * @params[in] device: BQ24 handler pointer referencing to the desired BQ2461x
  *                     device
  * @return CE_status [ ce_ON | ce_OFF ]
  */
-enum BQ24_ce_status BQ24_disable_charge(struct BQ24_handler *device);
+enum BQ24_ce_status bq24_disable_charge(struct BQ24 *device);
 
 /**
  * @func bq24_init
  * @brief Initializes a bq24 struct with the users desired configuration
- * @params[in] device: BQ24_handler pointer referencing to the desired device to
+ * @params[in] device: BQ24 handler pointer referencing to the desired device to
  *                         be initialized 
  * @params[in] pg_peek: pointer to pg_peek user defined function
  * @params[in] pg_logic: PG pin on value 
@@ -154,7 +175,7 @@ enum BQ24_ce_status BQ24_disable_charge(struct BQ24_handler *device);
  * @params[in] ce_logic: CE pin on value 
  * @return PG_status [ VALID_VCC | INVALID_VCC ]
  */
-enum BQ24_pg_status BQ24_init(struct BQ24_handler *device,
+enum BQ24_pg_status bq24_init(struct BQ24 *device,
 			    void (*pg_peek), uint8_t pg_logic,
                             void (*stat1_peek), uint8_t stat1_logic,
                             void (*stat2_peek), uint8_t stat2_logic,

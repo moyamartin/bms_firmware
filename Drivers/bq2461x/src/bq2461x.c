@@ -13,7 +13,7 @@
 
 #include "bq2461x.h"
 
-uint8_t CHARGER_STATUS[4] = {BQ24_INVALID_VALUE, BQ24_CHARGE_COMPLETE,
+uint8_t CHARGER_STATUS[4] = {BQ24_UNDEFINED_VALUE, BQ24_CHARGE_COMPLETE,
     BQ24_CHARGE_IN_PROGRESS, BQ24_FAULT};
 
 /* User Defined Functions ---------------------------------------------------*/
@@ -35,7 +35,7 @@ uint8_t CHARGER_STATUS[4] = {BQ24_INVALID_VALUE, BQ24_CHARGE_COMPLETE,
  * 		  functionalty for STM32F407xx.
  * @return uint8_t PG pin value
  */
-uint8_t _weak BQ24_read_PG(void) {
+__weak uint8_t bq24_read_PG(void) {
 
 #if defined(USE_HAL_DRIVER) && defined(STM32F407xx)
 
@@ -58,7 +58,7 @@ uint8_t _weak BQ24_read_PG(void) {
  * 		  functionalty for STM32F407xx.
  * @return uint8_t STAT1 pin value
  */
-uint8_t _weak BQ24_read_STAT1(void) {
+__weak uint8_t bq24_read_STAT1(void) {
 
 #if defined(USE_HAL_DRIVER) && defined(STM32F407xx)
 
@@ -81,7 +81,7 @@ uint8_t _weak BQ24_read_STAT1(void) {
  * 		  functionalty for STM32F407xx.
  * @return uint8_t STAT2 pin value
  */
-uint8_t _weak BQ24_read_STAT2(void) {
+__weak uint8_t bq24_read_STAT2(void) {
 
 #if defined(USE_HAL_DRIVER) && defined(STM32F407xx)
 
@@ -104,7 +104,7 @@ uint8_t _weak BQ24_read_STAT2(void) {
  * 		  functionalty for STM32F407xx.
  * @return uint8_t CE pin value
  */
-uint8_t _weak BQ24_read_CE(void) {
+__weak uint8_t bq24_read_CE(void) {
 
 #if defined(USE_HAL_DRIVER) && defined(STM32F407xx)
 
@@ -126,7 +126,7 @@ uint8_t _weak BQ24_read_CE(void) {
  * 		  implemented. As an example, we have only defined the
  * 		  functionalty for STM32F407xx.
  */
-void _weak BQ24_write_CE(uint8_t CE_Pin_State) {
+__weak void bq24_write_CE(uint8_t CE_Pin_State) {
 
 #if defined(USE_HAL_DRIVER) && defined(STM32F407xx)
 
@@ -142,7 +142,7 @@ void _weak BQ24_write_CE(uint8_t CE_Pin_State) {
 }
 /* End of User Defined Functions ---------------------------------------------*/
 
-enum BQ24_charge_status BQ24_read_charge_status(struct BQ24_handler *device) {
+enum BQ24_charge_status bq24_read_charge_status(struct BQ24 *device) {
 
     uint8_t stat1; // Stat1 pin buffer
     uint8_t stat2; // Stat2 pin buffer
@@ -160,11 +160,11 @@ enum BQ24_charge_status BQ24_read_charge_status(struct BQ24_handler *device) {
 /**
  * @func is_power_good
  * @brief Reads PG pin & returns the BQ2461x power state
- * @params[in] device: BQ24_handler pointer referencing to the desired BQ2461x
+ * @params[in] device: BQ24 handler pointer referencing to the desired BQ2461x
  *                     device
  * @return PG_status [ VALID_VCC | INVALID_VCC]
  */
-enum BQ24_pg_status BQ24_is_power_good(struct BQ24_handler *device){
+enum BQ24_pg_status bq24_is_power_good(struct BQ24 *device){
 
     uint8_t read;
 
@@ -172,19 +172,19 @@ enum BQ24_pg_status BQ24_is_power_good(struct BQ24_handler *device){
     read = (*device->PG.peek)();
 
     if(read == device->PG.logic)
-	return BQ24_INVALID_VCC;
-    else
 	return BQ24_VALID_VCC;
+    else
+	return BQ24_INVALID_VCC;
 }
 
 /**
  * @func is_charge_enabled
  * @brief Reads CE pin & returns the BQ2461x charge enable state
- * @params[in] device: BQ24_handler pointer referencing to the desired BQ2461x
+ * @params[in] device: BQ24 handler pointer referencing to the desired BQ2461x
  *                     device
  * @return CE_status [ ce_ON | ce_OFF ]
  */
-enum BQ24_ce_status BQ24_is_charge_enabled(struct BQ24_handler *device){
+enum BQ24_ce_status bq24_is_charge_enabled(struct BQ24 *device){
 
     uint8_t read;
 
@@ -200,42 +200,42 @@ enum BQ24_ce_status BQ24_is_charge_enabled(struct BQ24_handler *device){
 /**
  * @func enable_charge
  * @brief Sets CE pin to ce_ON status
- * @params[in] device: BQ24_handler pointer referencing to the desired BQ2461x
+ * @params[in] device: BQ24 handler pointer referencing to the desired BQ2461x
  *                     device
  * @return CE_status [ ce_ON | ce_OFF ]
  */
-enum BQ24_ce_status BQ24_enable_charge(struct BQ24_handler *device) {
+enum BQ24_ce_status bq24_enable_charge(struct BQ24 *device) {
 
-    if(BQ24_is_charge_enabled(device) == BQ24_ce_ON)
+    if(bq24_is_charge_enabled(device) == BQ24_ce_ON)
 	return BQ24_ce_ON;
 
-    if(BQ24_is_power_good(device) == BQ24_VALID_VCC)
-	BQ24_write_CE((uint8_t) BQ24_ce_ON);
+    if(bq24_is_power_good(device) == BQ24_VALID_VCC)
+	bq24_write_CE((uint8_t) BQ24_ce_ON);
 
-    return BQ24_is_charge_enabled(device);
+    return bq24_is_charge_enabled(device);
 }
 
 /**
  * @func disable_charge
  * @brief Sets CE pin to ce_OFF status
- * @params[in] device: BQ24_handler pointer referencing to the desired BQ2461x
+ * @params[in] device: BQ24 handler pointer referencing to the desired BQ2461x
  *                     device
  * @return CE_status [ ce_ON | ce_OFF ]
  */
-enum BQ24_ce_status BQ24_disable_charge(struct BQ24_handler *device) {
+enum BQ24_ce_status bq24_disable_charge(struct BQ24 *device) {
 
-    if(BQ24_is_charge_enabled(device) == BQ24_ce_OFF)
+    if(bq24_is_charge_enabled(device) == BQ24_ce_OFF)
 	return BQ24_ce_OFF;
 
-    BQ24_write_CE((uint8_t) BQ24_ce_OFF);
+    bq24_write_CE((uint8_t) BQ24_ce_OFF);
 
-    return BQ24_is_charge_enabled(device);
+    return bq24_is_charge_enabled(device);
 }
 
 /**
  * @func bq24_init
  * @brief Initializes a bq24 struct with the users desired configuration
- * @params[in] device: BQ24_handler pointer referencing to the desired device to
+ * @params[in] device: BQ24 handler pointer referencing to the desired device to
  *                         be initialized 
  * @params[in] pg_peek: pointer to pg_peek user defined function
  * @params[in] pg_logic: PG pin on value 
@@ -248,7 +248,7 @@ enum BQ24_ce_status BQ24_disable_charge(struct BQ24_handler *device) {
  * @params[in] ce_logic: CE pin on value 
  * @return PG_status [ VALID_VCC | INVALID_VCC ]
  */
-enum BQ24_pg_status BQ24_init(struct BQ24_handler *device,
+enum BQ24_pg_status bq24_init(struct BQ24 *device,
 	void (*pg_peek), uint8_t pg_logic,
 	void (*stat1_peek), uint8_t stat1_logic,
 	void (*stat2_peek), uint8_t stat2_logic,
@@ -258,19 +258,19 @@ enum BQ24_pg_status BQ24_init(struct BQ24_handler *device,
     device->PG.peek = pg_peek;
     device->PG.set  = NULL;
 
-    device->PG.logic = stat1_logic;
-    device->PG.peek = stat1_peek;
-    device->PG.set  = NULL;
+    device->STAT1.logic = stat1_logic;
+    device->STAT1.peek = stat1_peek;
+    device->STAT1.set  = NULL;
 
-    device->PG.logic = stat2_logic;
-    device->PG.peek = stat1_peek;
-    device->PG.set  = NULL;
+    device->STAT2.logic = stat2_logic;
+    device->STAT2.peek = stat1_peek;
+    device->STAT2.set  = NULL;
 
-    device->PG.logic = ce_logic;
-    device->PG.peek = ce_peek;
-    device->PG.set  = ce_set;
+    device->CE.logic = ce_logic;
+    device->CE.peek = ce_peek;
+    device->CE.set  = ce_set;
 
-    return BQ24_is_power_good(device);
+    return bq24_is_power_good(device);
 }
 
 //

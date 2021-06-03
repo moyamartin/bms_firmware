@@ -15,55 +15,64 @@
 
 #include <stdint.h>
 
-#ifndef _weak
-#define _weak __attribute__((weak))
+#ifndef __weak
+#define __weak __attribute__((weak))
 #endif
 
+/**
+* The open-drain PG (power-good) output indicates whether the VCC voltage is
+* valid or not.
+* BQ24 PG output open-drain FET turns on whenever the bq24618 has a valid VCC
+* input.
+ */
+#define BQ24_PG_PIN_ON_VALUE 0
 
 /**
- * @enum bat_series_inputs
- * @brief Represents the possible values for cell series measurements, this is
- * related to bit fields CELL_SEL on adc_control
- * @see adc_control
+* The open-drain STAT1 and STAT2 outputs indicate various charger operations as
+* shown in Table 2.
+* STATn OFF indicates that the open-drain FET transistor is turned off.
+*/
+#define BQ24_STATn_PIN_ON_VALUE 0
+
+/**
+ * The CE digital input is used to disable or enable the charge process.
+ * A high-level signal on this pin enables charge, provided all the other
+ * conditions for charge are met (see Enable and Disable Charging).
+ * A high-to-low transition on this pin also resets all timers and fault
+ * conditions.
+*/
+#define BQ24_CE_PIN_ON_VALUE 1
+
+/**
+ * @enum ce_status
+ * @brief Represents the possible values for BQ2461x CE (charge enable) pin
  */
 enum BQ24_ce_status {
     BQ24_ce_OFF = 0,
     BQ24_ce_ON
 };
 
+/**
+ * @enum pq_status
+ * @brief Represents the possible values for BQ2461x PG (power-good) pin
+ */
 enum BQ24_pg_status {
     BQ24_VALID_VCC = 0,
     BQ24_INVALID_VCC = -1,
 };
 
+/**
+ * @enum charge_status
+ * @brief Represents the possible values for BQ2461x STATn (charge status
+ * output) pins
+ */
 enum BQ24_charge_status {
     BQ24_CHARGE_COMPLETE = 1,
     BQ24_CHARGE_IN_PROGRESS = 0,
     BQ24_FAULT = -1,
-    BQ24_INVALID_VALUE = -2
+    BQ24_UNDEFINED_VALUE = -2
 };
 
-enum BQ24_pinState {
-    ON = 0,
-    OFF = 1
-};
-
-struct BQ24_pin {
-    uint8_t logic;		// Pin ON Logic 
-    uint8_t (*peek)(void);
-    void (*set)(uint8_t);
-};
-
-/**
- * @struct io_control
- * @brief struct that represents I/O control register data
- */
-struct BQ24_handler {
-    struct BQ24_pin PG;
-    struct BQ24_pin STAT1;
-    struct BQ24_pin STAT2;
-    struct BQ24_pin CE;
-};
 #endif
 
 //
