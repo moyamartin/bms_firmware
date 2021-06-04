@@ -13,7 +13,7 @@
  * @params[in] value: 16 bits value to write to register
  */
 static enum INA226_status writereg(enum INA226_i2c_addresses i2c_address,
-										  uint8_t reg, uint16_t value)
+                                   uint8_t reg, uint16_t value)
 {
 #if defined(USE_HAL_DRIVER) && defined(STM32F407xx)
 	if(HAL_I2C_Mem_Write(&INA226_INTERFACE, (uint16_t) i2c_address,
@@ -22,8 +22,6 @@ static enum INA226_status writereg(enum INA226_i2c_addresses i2c_address,
 		return INA226_I2C_TRANSMISSION_ERROR;
 	}
 	return INA226_OK;
-
-#elif defined(__AVR__)
 #endif
 }
 
@@ -35,7 +33,7 @@ static enum INA226_status writereg(enum INA226_i2c_addresses i2c_address,
  * 		  STM32F407xx
  */
 static enum INA226_status readreg(enum INA226_i2c_addresses i2c_address, 
-										 uint8_t reg, uint16_t * value)
+                                  uint8_t reg, uint16_t * value)
 { 
 #if defined(USE_HAL_DRIVER) && defined(STM32F407xx)
 	uint16_t rx_data;
@@ -46,9 +44,30 @@ static enum INA226_status readreg(enum INA226_i2c_addresses i2c_address,
 	}
 	*value = ((rx_data >> 8) & 0x00FF) | ((rx_data << 8) & 0xFF00);
 	return INA226_OK;
-#elif defined(__AVR__)
 #endif
 }
+
+
+/**
+ * @fn	  readreg_dma
+ * @brief Read a register of TIs INA226 device. using the microcontroller's DMA
+ * 		  The user of this library is responsible of defining this 
+ * 		  function. As an example, we have only defined the functionalty for
+ * 		  STM32F407xx
+ */
+static enum INA226_status readreg_dma(enum INA226_i2c_addresses i2c_address,
+                                      uint8_t reg, uint16_t * value)
+{
+#if defined(USE_HAL_DRIVER) && defined(STM32F407xx)
+    if(HAL_I2C_Mem_Read_DMA(&INA226_INTERFACE, (uint16_t) i2c_address,
+                            reg, INA226_ADDRESS_SIZE, (uint8_t *) value, 
+                            INA226_RX_BUFF_SIZE) != HAL_OK){
+        return INA226_I2C_TRANSMISSION_ERROR;
+    }
+    return INA226_OK;
+#endif
+}
+
 
 /**
  * @fn	  calculate_current_lsb
@@ -164,47 +183,75 @@ enum INA226_status ina226_reset(struct INA226 * ina226)
 	return INA226_OK;
 }
 
-enum INA226_status ina226_get_current(struct INA226 * ina226, 
-									  float32_t * current)
+enum INA226_status ina226_get_current(struct INA226 * ina226)
 {
 	uint16_t current_reg_val;
-	if(readreg(ina226->address, INA226_CURRENT_REG, 
-					  &current_reg_val) != INA226_OK){
+	if(readreg(ina226->address, INA226_CURRENT_REG, &current_reg_val) 
+            != INA226_OK){
 		return INA226_I2C_TRANSMISSION_ERROR;
 	}
-	*current = (float32_t) current_reg_val*ina226->current_LSB;
+	ina226->current = (float32_t) current_reg_val*ina226->current_LSB;
 	return INA226_OK;
 }
 
-enum INA226_status ina226_get_vbus(struct INA226 * ina226, float32_t * vbus)
+enum INA226_status ina226_get_current_dma(struct INA226 * ina226)
+{
+	if(readreg_dma(ina226->address, INA226_CURRENT_REG, &(ina226->dma_buffer)) 
+            != INA226_OK){
+		return INA226_I2C_TRANSMISSION_ERROR;
+	}
+    ina226->dma_request = INA226_DMA_CURRENT;
+	return INA226_OK;
+}
+
+enum INA226_status ina226_get_vbus(struct INA226 * ina226)
 {
 	uint16_t vbus_reg_val;
 	if(readreg(ina226->address, INA226_VBUS_REG, &vbus_reg_val) != INA226_OK){
 		return INA226_I2C_TRANSMISSION_ERROR;
 	}
-	*vbus = (float32_t) vbus_reg_val*INA226_VBUS_LSB_VAL;
+	ina226->v_bus = (float32_t) vbus_reg_val*INA226_VBUS_LSB_VAL;
 	return INA226_OK;
 }
 
-enum INA226_status ina226_get_vshunt(struct INA226 * ina226, float32_t * vshunt)
+enum INA226_status ina226_get_vbus_dma(struct INA226 * ina226)
+{
+    if(readreg_dma(ina226->address, INA226_VBUS_REG, &(ina226->dma_buffer)) 
+            != INA226_OK){
+        return INA226_I2C_TRANSMISSION_ERROR;
+    }
+    ina226->dma_request = INA226_DMA_VBUS;
+    return INA226_OK;
+}
+
+enum INA226_status ina226_get_vshunt(struct INA226 * ina226)
 {
 	uint16_t vshunt_reg_val;
 	if(readreg(ina226->address, INA226_VSHUNT_REG, 
 					  &vshunt_reg_val) != INA226_OK){
 		return INA226_I2C_TRANSMISSION_ERROR;
 	}
-	*vshunt = (float32_t) vshunt_reg_val*INA226_VSHUNT_LSB_VAL;
+	ina226->v_shunt = (float32_t) vshunt_reg_val*INA226_VSHUNT_LSB_VAL;
 	return INA226_OK;
 }
 
-enum INA226_status ina226_get_pwr(struct INA226 * ina226, float32_t * pwr)
+enum INA226_status ina226_get_vshunt_dma(struct INA226 * ina226)
+{
+    if(readreg_dma(ina226->address, INA226_VSHUNT_REG, &(ina226->dma_buffer))){
+        return INA226_I2C_TRANSMISSION_ERROR;
+    }
+    ina226->dma_request = INA226_DMA_VSHUNT;
+    return INA226_OK;
+}
+
+enum INA226_status ina226_get_pwr(struct INA226 * ina226)
 {
 	uint16_t pwr_reg_val;
 	if(readreg(ina226->address, INA226_PWR_REG, &pwr_reg_val) != INA226_OK) {
 		return INA226_I2C_TRANSMISSION_ERROR;
 	}
 	// power_LSB = current_LSB*25
-	*pwr= (float32_t) pwr_reg_val*ina226->current_LSB*25;
+	ina226->pwr = (float32_t) pwr_reg_val*ina226->current_LSB*25;
 	return INA226_OK;
 }
 
@@ -269,4 +316,31 @@ enum INA226_status ina226_clear_flags(struct INA226 * ina226)
 		return INA226_FLAGS_NOT_CLEARED;
 	}
 	return INA226_OK;
+}
+
+enum INA226_status handle_ina226_dma_callback(struct INA226 * ina226)
+{
+    ina226->dma_buffer = ((ina226->dma_buffer >> 8) & 0x00FF) | 
+        ((ina226->dma_buffer<< 8) & 0xFF00);
+    switch(ina226->dma_request){
+        case INA226_DMA_CURRENT:
+            ina226->current = 
+                (float32_t)ina226->dma_buffer*ina226->current_LSB;
+            return INA226_OK;
+        case INA226_DMA_VBUS:
+            ina226->v_bus = (float32_t)ina226->dma_buffer*INA226_VBUS_LSB_VAL;
+            return INA226_OK;
+        case INA226_DMA_VSHUNT:
+            ina226->v_shunt = 
+                (float32_t)ina226->dma_buffer*INA226_VSHUNT_LSB_VAL;
+            return INA226_OK;
+        case INA226_DMA_PWR:
+            ina226->pwr = (float32_t)ina226->dma_buffer*ina226->current_LSB*25;
+            return INA226_OK;
+        case INA226_NO_DMA_REQUEST:
+            return INA226_OK;
+        default:
+            return INA226_DMA_NOT_RECOGNIZED;
+    }
+    return INA226_OK;
 }

@@ -1,4 +1,3 @@
-/* USER CODE BEGIN Header */
 /**
  ******************************************************************************
  * @file           : main.c
@@ -6,7 +5,7 @@
  ******************************************************************************
  * @attention
  *
- * <h2><center>&copy; Copyright (c) 2020 STMicroelectronics.
+ * <h2><center>&copy; Copyright (c) 2021 STMicroelectronics.
  * All rights reserved.</center></h2>
  *
  * This software component is licensed by ST under BSD 3-Clause license,
@@ -16,25 +15,27 @@
  *
  ******************************************************************************
  */
-/* USER CODE END Header */
-/* Includes ------------------------------------------------------------------*/
 #include "battery_model.h"
+#include "battery_pack.h"
 #include "bq76pl536a.h"
 #include "ina226.h"
 #include "bq2461x.h"
 #include "logging.h"
 #include "main.h"
 
-/* Private variables ---------------------------------------------------------*/
 I2C_HandleTypeDef hi2c1;
+DMA_HandleTypeDef hdma_i2c1_rx;
+DMA_HandleTypeDef hdma_i2c1_tx;
 
 SPI_HandleTypeDef hspi1;
+DMA_HandleTypeDef hdma_spi1_rx;
+DMA_HandleTypeDef hdma_spi1_tx;
 
-/* USER CODE BEGIN PV */
+uint8_t new_v_cell_data = 0, new_current_data = 0;
+struct Pack battery_pack;
 struct INA226 current_sensor;
 struct BQ76 battery_monitor = {
     .adc_control = {
-        .ADC_ON  = 1,
         .CELL_SEL = CELL_1_6,
         .TS = BOTH,
     },
@@ -43,27 +44,23 @@ struct BQ76 battery_monitor = {
     },
     .function_config = {
         .CN = CELLS_6,
-    },
+    }
 };
 struct BQ24 battery_charger;
-/* USER CODE END PV */
+
+TIM_HandleTypeDef htim3;
+TIM_HandleTypeDef htim4;
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_SPI1_Init(void);
-
-/* USER CODE BEGIN PFP */
-
-/* USER CODE END PFP */
-
-/* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
-extern void initialise_monitor_handles(void);
+static void MX_TIM3_Init(void);
+static void MX_TIM4_Init(void);
 static void handle_bq76_faults(struct BQ76 * device);
 static void handle_bq76_alerts(struct BQ76 * device);
-/* USER CODE END 0 */
 
 /**
  * @brief  The application entry point.
@@ -71,37 +68,38 @@ static void handle_bq76_alerts(struct BQ76 * device);
  */
 int main(void)
 {
-    /* USER CODE BEGIN 1 */
 
-    /* USER CODE END 1 */
-
-    /* MCU Configuration--------------------------------------------------------*/
-
-    /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+    /* disable irq */
     __disable_irq();
+    /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
     HAL_Init();
-
-    /* USER CODE BEGIN Init */
-    initialise_monitor_handles();
-    /* USER CODE END Init */
-
     /* Configure the system clock */
     SystemClock_Config();
-
-    /* USER CODE BEGIN SysInit */
-
-    /* USER CODE END SysInit */
-
     /* Initialize all configured peripherals */
+    /* Initialize GPIO */
     MX_GPIO_Init();
+    /* Initialize DMA */
+    MX_DMA_Init();
+    /* Initialize I2C1 */
     MX_I2C1_Init();
+    /* Initialize SPI1 */
     MX_SPI1_Init();
+    /* Initialize TIM3 */
+    MX_TIM3_Init();
+    /* Initilize TIM4 */
+    MX_TIM4_Init();
 
+
+    /* Initialize current sensor */
     ina226_reset(&current_sensor);
     ina226_init(&current_sensor, GND_GND_ADDRESS, 0.1, 3.2f, AVG1, 
             t1100US, t1100US, SHUNT_AND_BUS_CONT, DEFAULT);
-    bq76_init(&battery_monitor, 0x01, 60, 4.1f, 100, 2.5f, 100, 60, 60, 100);
 
+    /* Initialize battery monitor */
+    bq76_init(&battery_monitor, 0x01, 60, MAX_VCELL, 100, MIN_VCELL, 100, 60, 
+            60, 100);
+
+    /* Initialize battery charger handler lib */
     bq24_init(&battery_charger, bq24_read_PG, BQ24_PG_PIN_ON_VALUE,
 	    bq24_read_STAT1, BQ24_STATn_PIN_ON_VALUE,
 	    bq24_read_STAT2, BQ24_STATn_PIN_ON_VALUE,
@@ -109,40 +107,38 @@ int main(void)
 
     __enable_irq();
 
-    /* USER CODE BEGIN 2 */
+    // Request for an adc conversion
+    bq76_swrqst_adc_convert(&battery_monitor);
+    // Wait until the battery monitor finishes the conversion
+    while(!battery_pack.initialized && 
+          battery_monitor.data_conversion_ongoing);
+    // Assume that the latest value is the OCV voltage of each cell and
+    // initalized the battery pack
+    init_battery_pack(&battery_pack, battery_monitor.v_cells);
 
-    /* USER CODE END 2 */
+    // start TIM3 -> 9525ms
+    HAL_TIM_Base_Start_IT(&htim3);
 
-    /* Infinite loop */
-    /* USER CODE BEGIN WHILE */
-    //float32_t current, pwr, vbus, vshunt;
-    _DEBUG("Start measurements\n");
-    /*
-       uint8_t transistors = 0x00;
-       int i = 0;
-       transistors = 0x01 << i;
-       bq76_set_balancing_output(&battery_monitor, 0x01);
-       _DEBUG("Balacing output: %d\n", transistors);
-       */
     while (1)
     {
-        if(battery_monitor.data_conversion_ongoing){
-            _DEBUG("Battery monitor converting adc channels\n");
-        } else {
-            _DEBUG("cell 1: %.2f | cell 2: %.2f | cell 3: %.2f | cell 4: %.2f | cell 5: %.2f | cell 6: %.2f\n",
-                    battery_monitor.v_cells[0], battery_monitor.v_cells[1],
-                    battery_monitor.v_cells[2], battery_monitor.v_cells[3],
-                    battery_monitor.v_cells[4], battery_monitor.v_cells[5]);
-            bq76_swrqst_adc_convert(&battery_monitor);
+        if(new_v_cell_data && new_current_data){
+            new_v_cell_data = 0;
+            new_current_data = 0;
+            HAL_GPIO_WritePin(BQ24_STAT1_GPIO_Port, BQ24_STAT1_Pin, 
+                              GPIO_PIN_SET);
+            HAL_TIM_Base_Start_IT(&htim3);
+            calc_battery_pack_soc(&battery_pack, battery_monitor.v_cells, 
+                                  current_sensor.current);
+            HAL_GPIO_WritePin(BQ24_STAT1_GPIO_Port, BQ24_STAT1_Pin, 
+                              GPIO_PIN_RESET);
         }
-        HAL_Delay(10);
     }
-    /* USER CODE END 3 */
 }
 
 /**
- * @brief System Clock Configuration
- * @retval None
+ * @fn      SystemClock_Config
+ * @brief   System Clock Configuration
+ * @retval  None
  */
 void SystemClock_Config(void)
 {
@@ -185,20 +181,13 @@ void SystemClock_Config(void)
 
 
 /**
- * @brief I2C1 Initialization Function
- * @param None
-
-*/
+ * @fn      MX_ISC1_Init
+ * @brief   I2C1 Initialization Function
+ * @param   None
+ */
 static void MX_I2C1_Init(void)
 {
 
-    /* USER CODE BEGIN I2C1_Init 0 */
-
-    /* USER CODE END I2C1_Init 0 */
-
-    /* USER CODE BEGIN I2C1_Init 1 */
-
-    /* USER CODE END I2C1_Init 1 */
     hi2c1.Instance = I2C1;
     hi2c1.Init.ClockSpeed = 100000;
     hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
@@ -212,13 +201,10 @@ static void MX_I2C1_Init(void)
     {
         Error_Handler();
     }
-    /* USER CODE BEGIN I2C1_Init 2 */
-
-    /* USER CODE END I2C1_Init 2 */
-
 }
 
 /**
+ * @fn MX_SPI1_Init
  * @brief SPI1 Initialization Function
  * @param None
  * @retval None
@@ -250,10 +236,113 @@ static void MX_SPI1_Init(void)
     {
         Error_Handler();
     }
-    /* USER CODE BEGIN SPI1_Init 2 */
+    hspi1.hdmarx = &hdma_spi1_rx;
+    hspi1.hdmatx = &hdma_spi1_tx;
 
-    /* USER CODE END SPI1_Init 2 */
+}
 
+
+/**
+ * @brief TIM3 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_TIM3_Init(void)
+{
+    TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+    TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+    htim3.Instance = TIM3;
+    htim3.Init.Prescaler = 83;
+    htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+    htim3.Init.Period = 9524;
+    htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+    htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+    if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
+    {
+        Error_Handler();
+    }
+    sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+    if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK)
+    {
+        Error_Handler();
+    }
+    sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
+    sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+    if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+    {
+        Error_Handler();
+    }
+}
+
+/**
+ * @brief TIM4 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_TIM4_Init(void)
+{
+    /* USER CODE BEGIN TIM4_Init 0 */
+
+    /* USER CODE END TIM4_Init 0 */
+
+    TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+    TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+    /* USER CODE BEGIN TIM4_Init 1 */
+
+    /* USER CODE END TIM4_Init 1 */
+    htim4.Instance = TIM4;
+    htim4.Init.Prescaler = 83;
+    htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
+    htim4.Init.Period = 102;
+    htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+    htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+    if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
+    {
+        Error_Handler();
+    }
+    sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+    if (HAL_TIM_ConfigClockSource(&htim4, &sClockSourceConfig) != HAL_OK)
+    {
+        Error_Handler();
+    }
+    if (HAL_TIM_IC_Init(&htim4) != HAL_OK)
+    {
+        Error_Handler();
+    }
+    sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
+    sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+    if (HAL_TIMEx_MasterConfigSynchronization(&htim4, &sMasterConfig) != HAL_OK)
+    {
+        Error_Handler();
+    }
+}
+
+
+
+/**
+ * Enable DMA controller clock
+ */
+static void MX_DMA_Init(void)
+{
+    /* DMA controller clock enable */
+    __HAL_RCC_DMA2_CLK_ENABLE();
+    __HAL_RCC_DMA1_CLK_ENABLE();
+
+    /* DMA interrupt init */
+    /* DMA1_Stream0_IRQn interrupt configuration */
+    HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
+    /* DMA1_Stream6_IRQn interrupt configuration */
+    HAL_NVIC_SetPriority(DMA1_Stream6_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(DMA1_Stream6_IRQn);
+    /* DMA2_Stream0_IRQn interrupt configuration */
+    HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
+    /* DMA2_Stream3_IRQn interrupt configuration */
+    HAL_NVIC_SetPriority(DMA2_Stream3_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(DMA2_Stream3_IRQn);
 }
 
 /**
@@ -276,6 +365,9 @@ static void MX_GPIO_Init(void)
     HAL_GPIO_WritePin(SWT_GPIO_GPIO_Port, SWT_GPIO_Pin, GPIO_PIN_RESET);
 
     /*Configure GPIO pin Output Level */
+    HAL_GPIO_WritePin(BQ24_STAT1_GPIO_Port, BQ24_STAT1_Pin, GPIO_PIN_RESET);
+
+    /*Configure GPIO pin Output Level */
     HAL_GPIO_WritePin(BQ76_CS_GPIO_Port, BQ76_CS_Pin, GPIO_PIN_SET);
 
     /*Configure GPIO pin Output Level */
@@ -288,13 +380,18 @@ static void MX_GPIO_Init(void)
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
     HAL_GPIO_Init(SWT_GPIO_GPIO_Port, &GPIO_InitStruct);
 
-    /*Configure GPIO pin : PDM_OUT_Pin */
-    GPIO_InitStruct.Pin = PDM_OUT_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    /*Configure GPIO pins : BQ24_PG_Pin BQ24_STAT2_Pin BQ24_CE_Pin */
+    GPIO_InitStruct.Pin = BQ24_PG_Pin|BQ24_STAT2_Pin|BQ24_CE_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.Alternate = GPIO_AF5_SPI2;
-    HAL_GPIO_Init(PDM_OUT_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+    /*Configure GPIO pin : BQ24_STAT1_Pin */
+    GPIO_InitStruct.Pin = BQ24_STAT1_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    HAL_GPIO_Init(BQ24_STAT1_GPIO_Port, &GPIO_InitStruct);
 
     /*Configure GPIO pin : BQ76_CS_Pin */
     GPIO_InitStruct.Pin = BQ76_CS_Pin;
@@ -369,13 +466,10 @@ static void MX_GPIO_Init(void)
 
 }
 
-/* USER CODE BEGIN 4 */
-
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
     if(GPIO_Pin == BQ76_DRDY_Pin){
-        bq76_read_cells(&battery_monitor);
-        battery_monitor.data_conversion_ongoing = 0;
+        bq76_read_v_cells(&battery_monitor);
     }
     if(GPIO_Pin == BQ76_ALERT_Pin){
         bq76_read_alert_reg(&battery_monitor);
@@ -455,7 +549,40 @@ static void handle_bq76_faults(struct BQ76 * device)
     bq76_clear_fault_reg(device, clear_fault_flags);
 }
 
-/* USER CODE END 4 */
+void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef * hspi)
+{
+    if(battery_monitor.current_dma_request == BQ76_V_CELLS){
+        new_v_cell_data = 1;
+    }
+    handle_bq76_dma_callback(&battery_monitor);
+}
+
+void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef * hi2c)
+{
+    if(current_sensor.dma_request == INA226_DMA_CURRENT){
+        new_current_data = 1;
+    }
+    handle_ina226_dma_callback(&current_sensor);
+}
+
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef * htim)
+{
+    // After 9525uS has passed read the current with dma
+    if(htim == &htim3){
+        HAL_GPIO_WritePin(BQ24_STAT1_GPIO_Port, BQ24_STAT1_Pin, 
+                          GPIO_PIN_SET);
+        ina226_get_current_dma(&current_sensor);
+        HAL_TIM_Base_Stop_IT(htim);
+        HAL_TIM_Base_Start_IT(&htim4);
+    } 
+    // After 103uS read the battery_monitor v_cells
+    if(htim == &htim4){
+        bq76_read_v_cells_dma(&battery_monitor);
+        HAL_TIM_Base_Stop_IT(htim);
+    }
+}
+
 
 /**
  * @brief  This function is executed in case of error occurrence.
