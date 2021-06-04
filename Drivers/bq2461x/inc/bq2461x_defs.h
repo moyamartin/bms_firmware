@@ -20,27 +20,23 @@
 #endif
 
 /**
-* The open-drain PG (power-good) output indicates whether the VCC voltage is
-* valid or not.
+* Open-drain PG (power-good) ON value define
 * BQ24 PG output open-drain FET turns on whenever the bq24618 has a valid VCC
 * input.
  */
 #define BQ24_PG_PIN_ON_VALUE 0
 
 /**
-* The open-drain STAT1 and STAT2 outputs indicate various charger operations as
-* shown in Table 2.
+* Open-drain STAT1 and STAT2 ON value define
 * STATn OFF indicates that the open-drain FET transistor is turned off.
 */
 #define BQ24_STATn_PIN_ON_VALUE 0
 
 /**
- * The CE digital input is used to disable or enable the charge process.
- * A high-level signal on this pin enables charge, provided all the other
- * conditions for charge are met (see Enable and Disable Charging).
- * A high-to-low transition on this pin also resets all timers and fault
- * conditions.
-*/
+ * CE digital input ON value define 
+ * There is an internal 1-MΩ pulldown resistor on the CE pin, so if CE is
+ * floated, the charge does not turn on 
+ */
 #define BQ24_CE_PIN_ON_VALUE 1
 
 /**
@@ -72,7 +68,6 @@ enum BQ24_charge_status {
     BQ24_FAULT = -1,
     BQ24_UNDEFINED_VALUE = -2
 };
-
 #endif
 
 //

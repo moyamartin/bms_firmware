@@ -143,7 +143,9 @@ enum BQ24_ce_status bq24_is_charge_enabled(struct BQ24 *device);
 
 /**
  * @func enable_charge
- * @brief Sets CE pin to ce_ON status
+ * @brief Sets CE pin to ce_ON status. Used to enable the charge process.  A
+ * 		high-level signal on this pin enables charge, provided all the other
+ * 		conditions for charge are met (see Enable and Disable Charging).
  * @params[in] device: BQ24 handler pointer referencing to the desired BQ2461x
  *                     device
  * @return CE_status [ ce_ON | ce_OFF ]
@@ -152,7 +154,9 @@ enum BQ24_ce_status bq24_enable_charge(struct BQ24 *device);
 
 /**
  * @func disable_charge
- * @brief Sets CE pin to ce_OFF status
+ * @brief Sets CE pin to ce_OFF status. Used to disable the charge process. A
+ * 		high-to-low transition on this pin also resets all timers and fault
+ * 		conditions.
  * @params[in] device: BQ24 handler pointer referencing to the desired BQ2461x
  *                     device
  * @return CE_status [ ce_ON | ce_OFF ]
@@ -183,3 +187,7 @@ enum BQ24_pg_status bq24_init(struct BQ24 *device,
 
 
 #endif
+
+//
+// End of file.
+//

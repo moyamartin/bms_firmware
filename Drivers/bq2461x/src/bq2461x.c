@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * @file	bq24g1x.h
+ * @file	bq2461x.h
  * @brief 	Texas Instruments BQ2461x declarations of function and high
  *                      level structures
  * @version	v1.00f00
@@ -12,9 +12,6 @@
  *****************************************************************************/
 
 #include "bq2461x.h"
-
-uint8_t CHARGER_STATUS[4] = {BQ24_FAULT, BQ24_CHARGE_COMPLETE,
-			    BQ24_CHARGE_IN_PROGRESS ,BQ24_UNDEFINED_VALUE };
 
 /* User Defined Functions ---------------------------------------------------*/
 
@@ -142,11 +139,22 @@ __weak void bq24_write_CE(uint8_t CE_Pin_State) {
 }
 /* End of User Defined Functions ---------------------------------------------*/
 
+/**
+ * @func BQ24_read_charge_status
+ * @brief Reads STAT1 & STATA2 pins & returns the BQ2461x chargien status.
+ * @params[in] device: BQ24 handler pointer referencing to the desired BQ2461x
+ *                     device
+ * @return BQ24_charge_status [BQ24_CHARGE_COMPLETE|BQ24_CHARGE_IN_PROGRESS|
+ *			       BQ24_FAULT|BQ24_INVALID_VALUE]
+ */
 enum BQ24_charge_status bq24_read_charge_status(struct BQ24 *device) {
 
     uint8_t stat1; // Stat1 pin buffer
     uint8_t stat2; // Stat2 pin buffer
     uint8_t index; // Charger_status table index
+
+    const enum BQ24_charge_status CHARGER_STATUS[4] = {BQ24_FAULT, BQ24_CHARGE_COMPLETE,
+			    BQ24_CHARGE_IN_PROGRESS ,BQ24_UNDEFINED_VALUE };
 
     // Take a peek on the pins
     stat1 = !((*device->STAT1.peek)() ^ device->STAT1.logic);
@@ -199,7 +207,9 @@ enum BQ24_ce_status bq24_is_charge_enabled(struct BQ24 *device){
 
 /**
  * @func enable_charge
- * @brief Sets CE pin to ce_ON status
+ * @brief Sets CE pin to ce_ON status. Used to enable the charge process.  A
+ * 		high-level signal on this pin enables charge, provided all the other
+ * 		conditions for charge are met (see Enable and Disable Charging).
  * @params[in] device: BQ24 handler pointer referencing to the desired BQ2461x
  *                     device
  * @return CE_status [ ce_ON | ce_OFF ]
@@ -210,14 +220,16 @@ enum BQ24_ce_status bq24_enable_charge(struct BQ24 *device) {
 	return BQ24_ce_ON;
 
     if(bq24_is_power_good(device) == BQ24_VALID_VCC)
-	bq24_write_CE(device->PG.logic);
+	bq24_write_CE(device->CE.logic);
 
     return bq24_is_charge_enabled(device);
 }
 
 /**
  * @func disable_charge
- * @brief Sets CE pin to ce_OFF status
+ * @brief Sets CE pin to ce_OFF status. Used to disable the charge process. A
+ * 		high-to-low transition on this pin also resets all timers and fault
+ * 		conditions.
  * @params[in] device: BQ24 handler pointer referencing to the desired BQ2461x
  *                     device
  * @return CE_status [ ce_ON | ce_OFF ]
@@ -227,7 +239,7 @@ enum BQ24_ce_status bq24_disable_charge(struct BQ24 *device) {
     if(bq24_is_charge_enabled(device) == BQ24_ce_OFF)
 	return BQ24_ce_OFF;
 
-    bq24_write_CE((uint8_t)(!device->PG.logic));
+    bq24_write_CE((uint8_t)(!device->CE.logic));
 
     return bq24_is_charge_enabled(device);
 }
@@ -249,10 +261,10 @@ enum BQ24_ce_status bq24_disable_charge(struct BQ24 *device) {
  * @return PG_status [ VALID_VCC | INVALID_VCC ]
  */
 enum BQ24_pg_status bq24_init(struct BQ24 *device,
-	void (*pg_peek), uint8_t pg_logic,
-	void (*stat1_peek), uint8_t stat1_logic,
-	void (*stat2_peek), uint8_t stat2_logic,
-	void (*ce_peek), void (*ce_set), uint8_t ce_logic)
+			    void (*pg_peek), uint8_t pg_logic,
+			    void (*stat1_peek), uint8_t stat1_logic,
+			    void (*stat2_peek), uint8_t stat2_logic,
+			    void (*ce_peek), void (*ce_set), uint8_t ce_logic)
 {
     device->PG.logic = pg_logic;
     device->PG.peek = pg_peek;
@@ -275,7 +287,6 @@ enum BQ24_pg_status bq24_init(struct BQ24 *device,
 
     // return charger adapter status
     return bq24_is_power_good(device);
-
 }
 //
 // End of file.
