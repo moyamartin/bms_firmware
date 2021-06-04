@@ -191,7 +191,7 @@ enum BQ24_ce_status bq24_is_charge_enabled(struct BQ24 *device){
     // Take a peek on the pin
     read = (*device->CE.peek)();
 
-    if(read == device->PG.logic)
+    if(read == device->CE.logic)
 	return BQ24_ce_ON;
     else
 	return BQ24_ce_OFF;
@@ -210,7 +210,7 @@ enum BQ24_ce_status bq24_enable_charge(struct BQ24 *device) {
 	return BQ24_ce_ON;
 
     if(bq24_is_power_good(device) == BQ24_VALID_VCC)
-	bq24_write_CE((uint8_t) BQ24_ce_ON);
+	bq24_write_CE(device->PG.logic);
 
     return bq24_is_charge_enabled(device);
 }
@@ -227,7 +227,7 @@ enum BQ24_ce_status bq24_disable_charge(struct BQ24 *device) {
     if(bq24_is_charge_enabled(device) == BQ24_ce_OFF)
 	return BQ24_ce_OFF;
 
-    bq24_write_CE((uint8_t) BQ24_ce_OFF);
+    bq24_write_CE((uint8_t)(!device->PG.logic));
 
     return bq24_is_charge_enabled(device);
 }
@@ -270,9 +270,13 @@ enum BQ24_pg_status bq24_init(struct BQ24 *device,
     device->CE.peek = ce_peek;
     device->CE.set  = ce_set;
 
-    return bq24_is_power_good(device);
-}
+    // charger starts disabled
+    bq24_disable_charge(device);
 
+    // return charger adapter status
+    return bq24_is_power_good(device);
+
+}
 //
 // End of file.
 //
