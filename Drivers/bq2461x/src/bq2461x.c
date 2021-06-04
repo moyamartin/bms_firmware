@@ -13,8 +13,8 @@
 
 #include "bq2461x.h"
 
-uint8_t CHARGER_STATUS[4] = {BQ24_UNDEFINED_VALUE, BQ24_CHARGE_COMPLETE,
-    BQ24_CHARGE_IN_PROGRESS, BQ24_FAULT};
+uint8_t CHARGER_STATUS[4] = {BQ24_FAULT, BQ24_CHARGE_COMPLETE,
+			    BQ24_CHARGE_IN_PROGRESS ,BQ24_UNDEFINED_VALUE };
 
 /* User Defined Functions ---------------------------------------------------*/
 
@@ -149,8 +149,8 @@ enum BQ24_charge_status bq24_read_charge_status(struct BQ24 *device) {
     uint8_t index; // Charger_status table index
 
     // Take a peek on the pins
-    stat1 = ((*(device->STAT1.peek))() && device->STAT1.logic);
-    stat2 = ((*device->STAT2.peek)() && device->STAT2.logic);
+    stat1 = !((*device->STAT1.peek)() ^ device->STAT1.logic);
+    stat2 = !((*device->STAT2.peek)() ^ device->STAT2.logic);
 
     index = (uint8_t)(((stat1<<1) & 0x02) | (stat2 & 0x01));
 
@@ -263,7 +263,7 @@ enum BQ24_pg_status bq24_init(struct BQ24 *device,
     device->STAT1.set  = NULL;
 
     device->STAT2.logic = stat2_logic;
-    device->STAT2.peek = stat1_peek;
+    device->STAT2.peek = stat2_peek;
     device->STAT2.set  = NULL;
 
     device->CE.logic = ce_logic;
