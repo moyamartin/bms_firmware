@@ -58,6 +58,7 @@ Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_spi.c
 C_SOURCES += $(wildcard Core/Src/*.c) 
 C_SOURCES += $(wildcard Drivers/ina226/src/*.c) 
 C_SOURCES += $(wildcard Drivers/bq76pl536a/src/*.c) 
+C_SOURCES += $(wildcard Drivers/bq2461x/src/*.c) 
 
 # ASM sources
 ASM_SOURCES =  \
@@ -119,8 +120,8 @@ C_INCLUDES =  \
 -IDrivers/CMSIS/Include \
 -IDrivers/CMSIS/DSP/Include \
 -IDrivers/ina226/inc \
--IDrivers/bq76pl536a/inc
-
+-IDrivers/bq76pl536a/inc \
+-IDrivers/bq2461x/inc
 
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections \
