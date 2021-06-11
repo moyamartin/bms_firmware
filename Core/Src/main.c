@@ -90,8 +90,8 @@ int main(void)
 
     /* Initialize current sensor */
     ina226_reset(&current_sensor);
-    ina226_init(&current_sensor, GND_GND_ADDRESS, 0.1, 3.2f, AVG1, 
-            t1100US, t1100US, SHUNT_AND_BUS_CONT, DEFAULT);
+    ina226_init(&current_sensor, GND_GND_ADDRESS, 0.0025f, 15.0f, AVG1, 
+                t1100US, t1100US, SHUNT_AND_BUS_CONT, DEFAULT);
 
     /* Initialize battery monitor */
     bq76_init(&battery_monitor, 0x01, 60, MAX_VCELL, 100, MIN_VCELL, 100, 60, 
@@ -99,14 +99,16 @@ int main(void)
     __enable_irq();
 
     // Request for an adc conversion
-    bq76_swrqst_adc_convert(&battery_monitor);
+    bq76_hwrqst_adc_convert(&battery_monitor);
+
     // Wait until the battery monitor finishes the conversion
     while(!battery_pack.initialized && 
           battery_monitor.data_conversion_ongoing);
+    
     // Assume that the latest value is the OCV voltage of each cell and
     // initalized the battery pack
     init_battery_pack(&battery_pack, battery_monitor.v_cells);
-
+    
     // start TIM3 -> 9525ms
     HAL_TIM_Base_Start_IT(&htim3);
 
@@ -115,19 +117,17 @@ int main(void)
         if(new_v_cell_data && new_current_data){
             new_v_cell_data = 0;
             new_current_data = 0;
-            HAL_GPIO_WritePin(BQ24_STAT1_GPIO_Port, BQ24_STAT1_Pin, 
-                              GPIO_PIN_SET);
+
             HAL_TIM_Base_Start_IT(&htim3);
             calc_battery_pack_soc(&battery_pack, battery_monitor.v_cells, 
                                   current_sensor.current);
-            HAL_GPIO_WritePin(BQ24_STAT1_GPIO_Port, BQ24_STAT1_Pin, 
-                              GPIO_PIN_RESET);
-        }
+       }
+ 
     }
 }
 
 /**
- * @fn      SystemClock_Config
+ * @fn      SystemClock_Confi
  * @brief   System Clock Configuration
  * @retval  None
  */
@@ -227,9 +227,6 @@ static void MX_SPI1_Init(void)
     {
         Error_Handler();
     }
-    hspi1.hdmarx = &hdma_spi1_rx;
-    hspi1.hdmatx = &hdma_spi1_tx;
-
 }
 
 
@@ -246,7 +243,7 @@ static void MX_TIM3_Init(void)
     htim3.Instance = TIM3;
     htim3.Init.Prescaler = 83;
     htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-    htim3.Init.Period = 9524;
+    htim3.Init.Period = 9031;
     htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
     htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
     if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
@@ -431,7 +428,8 @@ static void MX_GPIO_Init(void)
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
     if(GPIO_Pin == BQ76_DRDY_Pin){
-        bq76_read_v_cells(&battery_monitor);
+        bq76_assert_end_adc_convert();
+        bq76_read_v_cells_dma(&battery_monitor);
     }
     if(GPIO_Pin == BQ76_ALERT_Pin){
         bq76_read_alert_reg(&battery_monitor);
@@ -532,15 +530,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef * htim)
 {
     // After 9525uS has passed read the current with dma
     if(htim == &htim3){
-        HAL_GPIO_WritePin(BQ24_STAT1_GPIO_Port, BQ24_STAT1_Pin, 
-                          GPIO_PIN_SET);
-        ina226_get_current_dma(&current_sensor);
+        bq76_hwrqst_adc_convert(&battery_monitor);
         HAL_TIM_Base_Stop_IT(htim);
         HAL_TIM_Base_Start_IT(&htim4);
     } 
     // After 103uS read the battery_monitor v_cells
     if(htim == &htim4){
-        bq76_read_v_cells_dma(&battery_monitor);
+        ina226_get_current_dma(&current_sensor);
         HAL_TIM_Base_Stop_IT(htim);
     }
 }

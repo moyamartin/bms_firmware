@@ -305,4 +305,8 @@ enum INA226_status ina226_set_mask_enable(struct INA226 * ina226,
  */
 enum INA226_status handle_ina226_dma_callback(struct INA226 * ina226);
 
+void bq76_hwrqst_adc_convert();
+
+void bq76_assert_end_adc_convert();
+
 #endif /* ina226.h */

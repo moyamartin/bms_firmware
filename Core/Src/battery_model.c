@@ -28,7 +28,7 @@ float32_t cell_model_get_soc(struct Cell * cell)
 }
 
 cell_status init_cell_model(struct Cell * cell, 
-						    float32_t open_circuit_voltage)
+						    const float32_t open_circuit_voltage)
 {
 	/* 
 	 * At the battery model startup, we are considering we have the OCV (Open
@@ -81,10 +81,5 @@ float32_t calculate_cell_soc(struct Cell * cell, float32_t voltage,
 	}
 							  
 	// returns the current soc of the battery
-	return cell->filter.x_act_data[2];
-}
-
-float32_t battery_cell_get_soc(struct Cell * cell)
-{
 	return cell->filter.x_act_data[2];
 }

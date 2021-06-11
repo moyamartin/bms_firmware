@@ -37,6 +37,8 @@
     // it's handled by hw
 	#define BQ76_CS_GPIO BQ76_CS_GPIO_Port
 	#define BQ76_CS_PIN BQ76_CS_Pin
+    #define BQ76_CONV_GPIO BQ76_CONV_GPIO_Port
+    #define BQ76_CONV_PIN BQ76_CONV_Pin
 #elif defined (__AVR__)
 	// AVR devices support
 #endif

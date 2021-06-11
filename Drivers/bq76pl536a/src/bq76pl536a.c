@@ -5,14 +5,14 @@
  * @func enable_bq76
  * @brief calculate 
  */
-static void enable_bq76()
+void enable_bq76()
 {
 #if defined(USE_HAL_DRIVER) && defined(STM32F407xx)
     HAL_GPIO_WritePin(BQ76_CS_GPIO, BQ76_CS_PIN, GPIO_PIN_RESET);
 #endif
 }
 
-static void disable_bq76()
+void disable_bq76()
 {
 #if defined(USE_HAL_DRIVER) && defined(STM32F407xx)
     HAL_GPIO_WritePin(BQ76_CS_GPIO, BQ76_CS_PIN, GPIO_PIN_SET);
@@ -259,7 +259,7 @@ static enum BQ76_status readspi_dma(uint8_t spi_address, uint8_t reg_address,
         disable_bq76();
 		return BQ76_SPI_TRANSMISSION_ERROR;
 	}
-    if(HAL_SPI_Receive_DMA(&BQ76_INTERFACE, data, read_length) != HAL_OK){
+    if(HAL_SPI_Receive_DMA(&BQ76_INTERFACE, data, read_length + 1) != HAL_OK){
         disable_bq76();
         return BQ76_SPI_RECEIVE_ERROR;
     }
@@ -556,9 +556,9 @@ enum BQ76_status bq76_read_v_cells(struct BQ76 * device)
 
 enum BQ76_status bq76_read_v_cells_dma(struct BQ76 * device)
 {
-    uint8_t n_cells = (device->adc_control.CELL_SEL + 1);
+    uint8_t n_cells = 2*(device->adc_control.CELL_SEL + 1);
     if(readspi_dma((uint8_t) device->address_control.ADDR, VCELL1_LOW_REG,
-                   2*n_cells, device->raw_v_cells) != BQ76_OK){
+                   n_cells, device->raw_v_cells) != BQ76_OK){
         return BQ76_SPI_TRANSMISSION_ERROR;
     }
     device->current_dma_request = BQ76_V_CELLS;
@@ -573,6 +573,21 @@ enum BQ76_status bq76_swrqst_adc_convert(struct BQ76 * device)
         return BQ76_SPI_TRANSMISSION_ERROR;
     }
     return BQ76_OK;
+}
+
+void bq76_hwrqst_adc_convert(struct BQ76 * device)
+{
+#if defined(USE_HAL_DRIVER) && defined(STM32F407xx)
+    HAL_GPIO_WritePin(BQ76_CONV_GPIO, BQ76_CONV_PIN, GPIO_PIN_SET);
+    device->data_conversion_ongoing = 1;
+#endif
+}
+
+void bq76_assert_end_adc_convert()
+{
+#if defined(USE_HAL_DRIVER) && defined(STM32F407xx)
+    HAL_GPIO_WritePin(BQ76_CONV_GPIO, BQ76_CONV_PIN, GPIO_PIN_RESET);
+#endif
 }
 
 
@@ -696,30 +711,40 @@ enum BQ76_status bq76_set_balancing_output(struct BQ76 * device,
 enum BQ76_status handle_bq76_dma_callback(struct BQ76 * monitor)
 {
     // Disable the SPI interface for this chip
-    disable_bq76();
+
     switch(monitor->current_dma_request){
         case BQ76_V_CELLS: ;
             // before calculating new data and updating it, we need to check if
             // the crc is valid
-            uint8_t read_length = 2*(monitor->adc_control.CELL_SEL + 1);
+            disable_bq76();
+            //uint8_t read_length = 2*(monitor->adc_control.CELL_SEL + 1);
+            /*
             struct BQ76_read_packet_format packet = 
                 init_read_packet(monitor->address_control.ADDR, VCELL1_LOW_REG, 
                                  read_length);
-            memcpy(packet.buffer, monitor->raw_v_cells, read_length - 1);
+                                 */
+            //memcpy(packet.buffer, monitor->raw_v_cells, read_length - 1);
+            /*
             if(calculate_crc((uint8_t *) &packet, 
                              BQ76_RX_BUFF_LENGTH(read_length) - 1, 
                              CRC_SMBUS_LUT) != packet.buffer[read_length]){
                 return BQ76_CRC_MISMATCH;
             }
+            */
             calc_battery_voltages(monitor);
+            monitor->current_dma_request = BQ76_NO_CONV;
+            monitor->data_conversion_ongoing = 0;
             return BQ76_OK;
         case BQ76_T_SENSORS:
+            disable_bq76();
             // TODO: implement calc temp sensors
             break;
         case BQ76_FAULT_REG:
+            disable_bq76();
             // TODO: implement fault reg dma reading 
             break;
         case BQ76_ALERT_REG:
+            disable_bq76();
             // TODO: implement alert reg dma reading
             break;
         default:
