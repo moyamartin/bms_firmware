@@ -51,6 +51,10 @@ struct BQ24 battery_charger;
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
 
+UART_HandleTypeDef huart5;
+DMA_HandleTypeDef hdma_uart5_rx;
+DMA_HandleTypeDef hdma_uart5_tx;
+
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
@@ -59,6 +63,13 @@ static void MX_I2C1_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_TIM4_Init(void);
+static void MX_UART5_Init(void);
+/* USER CODE BEGIN PFP */
+
+/* USER CODE END PFP */
+
+/* Private user code ---------------------------------------------------------*/
+/* USER CODE BEGIN 0 */
 static void handle_bq76_faults(struct BQ76 * device);
 static void handle_bq76_alerts(struct BQ76 * device);
 
@@ -88,7 +99,8 @@ int main(void)
     MX_TIM3_Init();
     /* Initilize TIM4 */
     MX_TIM4_Init();
-
+    /* Initialize UART5 */
+    MX_UART5_Init();
 
     /* Initialize current sensor */
     ina226_reset(&current_sensor);
@@ -316,9 +328,41 @@ static void MX_TIM4_Init(void)
     }
 }
 
+/**
+  * @brief UART5 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_UART5_Init(void)
+{
 
+  /* USER CODE BEGIN UART5_Init 0 */
+
+  /* USER CODE END UART5_Init 0 */
+
+  /* USER CODE BEGIN UART5_Init 1 */
+
+  /* USER CODE END UART5_Init 1 */
+  huart5.Instance = UART5;
+  huart5.Init.BaudRate = 115200;
+  huart5.Init.WordLength = UART_WORDLENGTH_8B;
+  huart5.Init.StopBits = UART_STOPBITS_1;
+  huart5.Init.Parity = UART_PARITY_NONE;
+  huart5.Init.Mode = UART_MODE_TX_RX;
+  huart5.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart5.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart5) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN UART5_Init 2 */
+
+  /* USER CODE END UART5_Init 2 */
+
+}
 
 /**
+
  * Enable DMA controller clock
  */
 static void MX_DMA_Init(void)
@@ -331,9 +375,15 @@ static void MX_DMA_Init(void)
     /* DMA1_Stream0_IRQn interrupt configuration */
     HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
+    /* DMA1_Stream5_IRQn interrupt configuration */
+    HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
     /* DMA1_Stream6_IRQn interrupt configuration */
     HAL_NVIC_SetPriority(DMA1_Stream6_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(DMA1_Stream6_IRQn);
+    /* DMA1_Stream7_IRQn interrupt configuration */
+    HAL_NVIC_SetPriority(DMA1_Stream7_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(DMA1_Stream7_IRQn);
     /* DMA2_Stream0_IRQn interrupt configuration */
     HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
@@ -361,8 +411,8 @@ static void MX_GPIO_Init(void)
     /*Configure GPIO pin Output Level */
     HAL_GPIO_WritePin(SWT_GPIO_GPIO_Port, SWT_GPIO_Pin, GPIO_PIN_RESET);
 
-    /*Configure GPIO pin Output Level */
-    HAL_GPIO_WritePin(BQ24_STAT1_GPIO_Port, BQ24_STAT1_Pin, GPIO_PIN_RESET);
+    /*Configure GPIO CE pin Output Level */
+    HAL_GPIO_WritePin(BQ24_CE_GPIO_Port, BQ24_CE_Pin, GPIO_PIN_RESET);
 
     /*Configure GPIO pin Output Level */
     HAL_GPIO_WritePin(BQ76_CS_GPIO_Port, BQ76_CS_Pin, GPIO_PIN_SET);
@@ -377,18 +427,18 @@ static void MX_GPIO_Init(void)
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
     HAL_GPIO_Init(SWT_GPIO_GPIO_Port, &GPIO_InitStruct);
 
-    /*Configure GPIO pins : BQ24_PG_Pin BQ24_STAT2_Pin BQ24_CE_Pin */
-    GPIO_InitStruct.Pin = BQ24_PG_Pin|BQ24_STAT2_Pin|BQ24_CE_Pin;
+    /*Configure GPIO pins : BQ24_PG_Pin BQ24_STAT2_Pin BQ24_STAT1_Pin */
+    GPIO_InitStruct.Pin = BQ24_PG_Pin|BQ24_STAT2_Pin|BQ24_STAT1_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-    /*Configure GPIO pin : BQ24_STAT1_Pin */
-    GPIO_InitStruct.Pin = BQ24_STAT1_Pin;
+    /*Configure GPIO pin : BQ24_CE_Pin  */
+    GPIO_InitStruct.Pin = BQ24_CE_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-    HAL_GPIO_Init(BQ24_STAT1_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_Init(BQ24_CE_GPIO_Port, &GPIO_InitStruct);
 
     /*Configure GPIO pin : BQ76_CS_Pin */
     GPIO_InitStruct.Pin = BQ76_CS_Pin;
@@ -421,35 +471,6 @@ static void MX_GPIO_Init(void)
     GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(BOOT1_GPIO_Port, &GPIO_InitStruct);
-
-    /*Configure GPIO pin : BQ24_PG_Pin  */
-    GPIO_InitStruct.Pin = BQ24_PG_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Alternate = 0;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(BQ24_PG_GPIO_Port, &GPIO_InitStruct);
-
-    /*Configure GPIO pin : BQ24_STAT1_Pin  */
-    GPIO_InitStruct.Pin = BQ24_STAT1_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(BQ24_STAT1_GPIO_Port, &GPIO_InitStruct);
-
-    /*Configure GPIO pin : BQ24_STAT2_Pin  */
-    GPIO_InitStruct.Pin = BQ24_STAT2_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(BQ24_STAT2_GPIO_Port, &GPIO_InitStruct);
-
-    /*Configure GPIO CE pin Output Level */
-    HAL_GPIO_WritePin(BQ24_CE_GPIO_Port, BQ24_CE_Pin, GPIO_PIN_RESET);
-
-    /*Configure GPIO pin : BQ24_CE_Pin  */
-    GPIO_InitStruct.Pin = BQ24_CE_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(BQ24_CE_GPIO_Port, &GPIO_InitStruct);
 
     /* EXTI interrupt init*/
     HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
@@ -579,6 +600,50 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef * htim)
     }
 }
 
+/**
+ * @brief  UARTx Transfer completed callback
+ * @param  UartHandle: UART handle. 
+ * @note   Report end of DMA Tx transfer 
+ * @retval None
+ */
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *UartHandle)
+{
+    if(UartHandle == &huart5){
+	//TODO:
+	/* Set transmission flag: transfer complete */
+//	Uart5Ready = SET;
+    }
+
+}
+
+/**
+  * @brief  Rx Transfer completed callback
+  * @param  UartHandle: UART handle
+  * @note   Report end of DMA Rx transfer
+  * @retval None
+  */
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *UartHandle)
+{
+    if(UartHandle == &huart5){
+	//TODO:
+	/* Set transmission flag: transfer complete */
+//	Uart5Ready = SET;
+    }
+}
+
+/**
+  * @brief  UART error callbacks
+  * @param  UartHandle: UART handle
+  * @note   This example shows a simple way to report transfer error, and you can
+  *         add your own implementation.
+  * @retval None
+  */
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *UartHandle)
+{
+    /* halt program if error*/
+    //TODO: delete on production
+    for(;;){}
+}
 
 /**
  * @brief  This function is executed in case of error occurrence.
