@@ -19,6 +19,7 @@
 #include "battery_pack.h"
 #include "bq76pl536a.h"
 #include "ina226.h"
+#include "bq2461x.h"
 #include "logging.h"
 #include "main.h"
 
@@ -45,9 +46,10 @@ struct BQ76 battery_monitor = {
         .CN = CELLS_6,
     }
 };
+struct BQ24 battery_charger;
+
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
-
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
@@ -96,6 +98,13 @@ int main(void)
     /* Initialize battery monitor */
     bq76_init(&battery_monitor, 0x01, 60, MAX_VCELL, 100, MIN_VCELL, 100, 60, 
             60, 100);
+
+    /* Initialize battery charger handler lib */
+    bq24_init(&battery_charger, bq24_read_PG, BQ24_PG_PIN_ON_VALUE,
+	    bq24_read_STAT1, BQ24_STATn_PIN_ON_VALUE,
+	    bq24_read_STAT2, BQ24_STATn_PIN_ON_VALUE,
+	    bq24_read_CE, bq24_write_CE, BQ24_CE_PIN_ON_VALUE);
+
     __enable_irq();
 
     // Request for an adc conversion
@@ -412,6 +421,35 @@ static void MX_GPIO_Init(void)
     GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(BOOT1_GPIO_Port, &GPIO_InitStruct);
+
+    /*Configure GPIO pin : BQ24_PG_Pin  */
+    GPIO_InitStruct.Pin = BQ24_PG_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Alternate = 0;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(BQ24_PG_GPIO_Port, &GPIO_InitStruct);
+
+    /*Configure GPIO pin : BQ24_STAT1_Pin  */
+    GPIO_InitStruct.Pin = BQ24_STAT1_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    HAL_GPIO_Init(BQ24_STAT1_GPIO_Port, &GPIO_InitStruct);
+
+    /*Configure GPIO pin : BQ24_STAT2_Pin  */
+    GPIO_InitStruct.Pin = BQ24_STAT2_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    HAL_GPIO_Init(BQ24_STAT2_GPIO_Port, &GPIO_InitStruct);
+
+    /*Configure GPIO CE pin Output Level */
+    HAL_GPIO_WritePin(BQ24_CE_GPIO_Port, BQ24_CE_Pin, GPIO_PIN_RESET);
+
+    /*Configure GPIO pin : BQ24_CE_Pin  */
+    GPIO_InitStruct.Pin = BQ24_CE_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    HAL_GPIO_Init(BQ24_CE_GPIO_Port, &GPIO_InitStruct);
 
     /* EXTI interrupt init*/
     HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
