@@ -62,6 +62,7 @@ extern DMA_HandleTypeDef hdma_spi1_rx;
 extern DMA_HandleTypeDef hdma_spi1_tx;
 extern TIM_HandleTypeDef htim3;
 extern TIM_HandleTypeDef htim4;
+extern UART_HandleTypeDef huart5;
 extern DMA_HandleTypeDef hdma_uart5_rx;
 extern DMA_HandleTypeDef hdma_uart5_tx;
 /* USER CODE BEGIN EV */
@@ -356,6 +357,16 @@ void DMA2_Stream3_IRQHandler(void)
   /* USER CODE BEGIN DMA2_Stream3_IRQn 1 */
 
   /* USER CODE END DMA2_Stream3_IRQn 1 */
+}
+
+/** 
+* @brief This function handles USARTx interrupt request. 
+* @param None 
+* @retval None 
+*/ 
+void UART5_IRQHandler(void) 
+{ 
+    HAL_UART_IRQHandler(&huart5); 
 }
 
 /* USER CODE BEGIN 1 */

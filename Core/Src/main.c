@@ -384,6 +384,9 @@ static void MX_DMA_Init(void)
     /* DMA1_Stream6_IRQn interrupt configuration */
     HAL_NVIC_SetPriority(DMA1_Stream6_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(DMA1_Stream6_IRQn);
+    /* DMA1_Stream7_IRQn interrupt configuration */
+    HAL_NVIC_SetPriority(DMA1_Stream7_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(DMA1_Stream7_IRQn);
     /* DMA2_Stream0_IRQn interrupt configuration */
     HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
@@ -601,6 +604,50 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef * htim)
     }
 }
 
+/**
+ * @brief  UARTx Transfer completed callback
+ * @param  UartHandle: UART handle. 
+ * @note   Report end of DMA Tx transfer 
+ * @retval None
+ */
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *UartHandle)
+{
+    if(UartHandle == &huart5){
+	//TODO:
+	/* Set transmission flag: transfer complete */
+//	Uart5Ready = SET;
+    }
+
+}
+
+/**
+  * @brief  Rx Transfer completed callback
+  * @param  UartHandle: UART handle
+  * @note   Report end of DMA Rx transfer
+  * @retval None
+  */
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *UartHandle)
+{
+    if(UartHandle == &huart5){
+	//TODO:
+	/* Set transmission flag: transfer complete */
+//	Uart5Ready = SET;
+    }
+}
+
+/**
+  * @brief  UART error callbacks
+  * @param  UartHandle: UART handle
+  * @note   This example shows a simple way to report transfer error, and you can
+  *         add your own implementation.
+  * @retval None
+  */
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *UartHandle)
+{
+    /* halt program if error*/
+    //TODO: delete on production
+    for(;;){}
+}
 
 /**
  * @brief  This function is executed in case of error occurrence.
