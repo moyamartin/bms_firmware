@@ -21,6 +21,7 @@
 #include "ina226.h"
 #include "bq2461x.h"
 #include "logging.h"
+#include "serial.h"
 #include "main.h"
 
 I2C_HandleTypeDef hi2c1;
@@ -130,6 +131,9 @@ int main(void)
 
     // start TIM3 -> 9525ms
     HAL_TIM_Base_Start_IT(&htim3);
+   
+    SERIAL_init();
+    _SERIAL_DEBUG("bms firmware started!\n\r");
 
     while (1)
     {
@@ -629,7 +633,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *UartHandle)
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *UartHandle)
 {
     if(UartHandle == &huart5){
-	//TODO:
+	SERIAL_RxHandler();
 	/* Set transmission flag: transfer complete */
 //	Uart5Ready = SET;
     }

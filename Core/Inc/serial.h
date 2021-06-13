@@ -28,6 +28,8 @@
 
 #endif
 
+#define SERIAL_ECHO
+
 /**
  * @enum  serial_status
  * @brief defines several possible status of the serial layer to inform the
@@ -38,13 +40,24 @@ enum SERIAL_status {
 	SERIAL_FAIL = -1,
 };
 
-// Gloval funtions declarations
-enum SERIAL_status serial_print (char *pTxSrc);
+struct SERIAL {
+    char *pBuff;
+    char *pBuffActual;
+    uint16_t BuffLen;
+};
+    
+
+// Global funtions declarations
+enum SERIAL_status serial_print_string(char *pTxSrc);
+enum SERIAL_status serial_read_char(char *pRxSrc);
+
+void SERIAL_init(void);
+void SERIAL_RxHandler(void);
 
 extern char serial_txBuff[SERIAL_BUFF_LENGTH];
 
 #if defined (DEBUG)
-#define _SERIAL_DEBUG(fmt, args...) sprintf(serial_txBuff,"%s:%s:%d: "fmt, __FILE__, __FUNCTION__, __LINE__, ##args);serial_print(serial_txBuff); 
+#define _SERIAL_DEBUG(fmt, args...) sprintf(serial_txBuff,"%s:%s:%d: "fmt, __FILE__, __FUNCTION__, __LINE__, ##args);serial_print_string(serial_txBuff); 
 #else
 #define _SERIAL_DEBUG(fmt,args...){}
 #endif
