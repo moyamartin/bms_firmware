@@ -13,12 +13,13 @@
 #include <stdio.h>
 #include "find.h"
 #include "battery_model.h"
+#include "bq76pl536a.h"
 
 BOOL IsUnbalanced(struct Pack *pack){
     float32_t buffer[SERIES_CELLS];
     uint32_t max_index,min_index;
      for(int i = 0; i < SERIES_CELLS; ++i){
-         buffer[i]=battery_model_get_soc(&(pack->cells[i]));
+         buffer[i]=cell_model_get_soc(&(pack->cells[i]));
      }
 
 
@@ -42,7 +43,7 @@ uint8_t Balance_transistors(struct Pack *pack){
     uint8_t transistors=0;
     
      for(int i = 0; i < SERIES_CELLS; ++i){
-         buffer[i]=battery_model_get_soc(&(pack->cells[i]));
+         buffer[i]=cell_model_get_soc(&(pack->cells[i]));
      }
 
     min_index=get_min_index_f32(buffer,SERIES_CELLS);

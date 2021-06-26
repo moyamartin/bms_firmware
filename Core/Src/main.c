@@ -157,7 +157,20 @@ int main(void)
             calc_battery_pack_soc(&battery_pack, battery_monitor.v_cells, 
                                   current_sensor.current);
        }
- 
+ /*
+  * Don´t delete
+      //Given a determinate state of the charger an FSM_BALANC machine event is selected
+
+        //No operational changes, running the current state
+        SM_Event(Balancer1SM, BALANC_RUN_CURRENT_STATE, NULL);
+
+        //CC_CV charge has started
+        SM_Event(Balancer1SM, BALANC_DETEC, NULL);
+
+        //CC_CV charge has ended
+        SM_Event(Balancer1SM, BALANC_EQ, NULL);
+
+        */
     }
 }
 
