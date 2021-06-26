@@ -40,7 +40,7 @@ typedef struct
  *              cells, this will return 1 if the pack is unbalanced.              
  *  @params[in]	pack: struct Pack to detect unbalance.
  */
-bool IsUnbalanced(Struct *Pack pack);
+BOOL IsUnbalanced(struct Pack *pack);
 
 /**
  *  @fn			Balance_transistors
@@ -49,7 +49,7 @@ bool IsUnbalanced(Struct *Pack pack);
  *              ByPass Transistors to be activated for balancing purposes              
  *  @params[in]	pack: struct Pack to set ByPass Transistors.
  */
-uint8_t Balance_transistors(Struct *Pack pack);
+uint8_t Balance_transistors(struct Pack *pack);
 
 
 

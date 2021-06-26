@@ -6,23 +6,24 @@
 
  */
 
-#DEFINE UNBALANCED_THRESHOLD (0.02f)
-
+#define UNBALANCED_THRESHOLD (0.02f)
+#include "DataTypes.h"
 #include "fsm_balancing.h"
 #include "fsm.h"
 #include <stdio.h>
+#include "find.h"
+#include "battery_model.h"
 
-
-bool IsUnbalanced(Struct *Pack pack){
+BOOL IsUnbalanced(struct Pack *pack){
     float32_t buffer[SERIES_CELLS];
     uint32_t max_index,min_index;
      for(int i = 0; i < SERIES_CELLS; ++i){
-         buffer[i]=battery_model_get_soc(&(pack->cells[i]))
+         buffer[i]=battery_model_get_soc(&(pack->cells[i]));
      }
 
 
     max_index=get_max_index_f32(buffer,SERIES_CELLS);
-    min_index=get_if_index_f32(buffer,SERIES_CELLS);
+    min_index=get_min_index_f32(buffer,SERIES_CELLS);
 
     /*Comparison between the most and the least charged cells if this difference is 
     bigger than UNBALANCED_THRESHOLD the pack is declared unbalanced*/
@@ -35,19 +36,19 @@ bool IsUnbalanced(Struct *Pack pack){
 };
 
 
-uint8_t Balance_transistors(Struct *Pack pack){
+uint8_t Balance_transistors(struct Pack *pack){
     float32_t buffer[SERIES_CELLS];
     uint32_t min_index;
     uint8_t transistors=0;
     
      for(int i = 0; i < SERIES_CELLS; ++i){
-         buffer[i]=battery_model_get_soc(&(pack->cells[i]))
+         buffer[i]=battery_model_get_soc(&(pack->cells[i]));
      }
 
-    min_index=get_if_index_f32(buffer,SERIES_CELLS);
+    min_index=get_min_index_f32(buffer,SERIES_CELLS);
     
         for(int i = 0; i < SERIES_CELLS; ++i){
-            if (buffer[min_index]+UNBALANCE_THRESHOLD<buffer[i]){
+            if (buffer[min_index]+UNBALANCED_THRESHOLD<buffer[i]){
                 		
 			transistors = transistors | 1;
 		    }
@@ -57,10 +58,8 @@ uint8_t Balance_transistors(Struct *Pack pack){
 		    }
 
         }
-    }
-return transistors
-
-};
+    return transistors;
+    };
 
 // State enumeration order must match the order of state
 //method entries in the state map
@@ -72,15 +71,15 @@ enum States {
 };
 
 // State machine state functions
-STATE_DECLARE(Idle,NoEventData)
-STATE_DECLARE(Detecting,NoEventData)
-STATE_DECLARE(Equalizing,NoEventData)
+STATE_DECLARE(Idle)
+STATE_DECLARE(Detecting)
+STATE_DECLARE(Equalizing)
 
 
 BEGIN_STATE_MAP(FSM_BALANC)
-    STATE_MAP_ENTRY(ST_Idle)
-    STATE_MAP_ENTRY(ST_Detecting)
-    STATE_MAP_ENTRY(ST_Equalizing)
+    STATE_MAP_ENTRY(Idle)
+    STATE_MAP_ENTRY(Detecting)
+    STATE_MAP_ENTRY(Equalizing)
 END_STATE_MAP(FSM_BALANC)
 
 // CV Charging In Progress external event
@@ -123,14 +122,14 @@ EVENT_DEFINE(BALANC_RUN_CURRENT_STATE, NoEventData)
 
 
 // State machine sits here when battery is not charging
-STATE_DEFINE(Idle, NoEventData)
+STATE_DEFINE(Idle)
 {
     printf("%s ST_Idle\n", self->name);
 }
 
 
 // When the Charger is in CV charging process starts checking Unbalanced Cells
-STATE_DEFINE(Detecting, NoEventData)
+STATE_DEFINE(Detecting)
 {
     // Get pointer to the instance data 
     FSM_BALANC* pInstance = SM_GetInstance(FSM_BALANC);
@@ -138,26 +137,26 @@ STATE_DEFINE(Detecting, NoEventData)
     
     printf("%s ST_Detecting: \n", self->name);
 
-    if (IsUnbalanced(pEventData->pack)){
+    if (IsUnbalanced(pInstance->pack)){
         SM_InternalEvent(BALANC_EQ, NULL);
     }
 
 }
 
 // Sets the Balance transistors output of the BQ76
-STATE_DEFINE(Equalizing, NoEventData)
+STATE_DEFINE(Equalizing)
 {
     // Get pointer to the instance data
     FSM_BALANC* pInstance = SM_GetInstance(FSM_BALANC);
     
     
 
-    bq76_set_balancing_output(pEventData->device, 
-                              Balance_transistors(pEventData->pack))
+    bq76_set_balancing_output(pInstance->device,
+                              Balance_transistors(pInstance->pack));
     
     printf("%s ST_Equalizing: \n", self->name);
 
-        if (!IsUnbalanced(pEventData->pack)){
+        if (!IsUnbalanced(pInstance->pack)){
         SM_InternalEvent(BALANC_DETEC, NULL);
         }
 }
