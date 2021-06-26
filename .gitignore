@@ -1,4 +1,3 @@
-tags
 /build
 Test/objs
 *.a
@@ -40,3 +39,8 @@ Sessionx.vim
 tags
 ## Persistent undo
 [._]*.un~
+
+## Visual Studio 2019
+.vs/
+
+Test/bms_test
