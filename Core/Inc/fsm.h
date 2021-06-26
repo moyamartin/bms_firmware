@@ -10,11 +10,16 @@
  *              SANTOS, Lucio           (lusho2206@gmail.com)
  * @copyright	GPL license
  *
- ******************************************************************************/
+
+ *******************************************************************************/
+
 #ifndef FSM_H
 #define FSM_H
 
 #include <stdint.h>
+#include <assert.h>
+
+
 
 enum { EVENT_IGNORED = 0xFE, CANNOT_HAPPEN = 0xFF };
 
@@ -134,23 +139,26 @@ void _SM_StateEngineEx(SM_StateMachine* self,
     SM_StateMachine _smName_##Obj = { #_smName_, _instance_, \
         0, 0, 0, 0 }; 
 
+#define SM_GET_CURRENT_STATE(_smName_) \
+    _smName_##Obj.currentState
+
 #define EVENT_DECLARE(_eventFunc_, _eventData_) \
     void _eventFunc_(SM_StateMachine* self, _eventData_* pEventData);
 
 #define EVENT_DEFINE(_eventFunc_, _eventData_) \
     void _eventFunc_(SM_StateMachine* self, _eventData_* pEventData)
 
-#define STATE_DECLARE(_stateFunc_, _eventData_) \
-    static void ST_##_stateFunc_(SM_StateMachine* self, _eventData_* pEventData);
+#define STATE_DECLARE(_stateFunc_) \
+    static void ST_##_stateFunc_(SM_StateMachine* self, void* pEventData);
 
-#define STATE_DEFINE(_stateFunc_, _eventData_) \
-    static void ST_##_stateFunc_(SM_StateMachine* self, _eventData_* pEventData)
+#define STATE_DEFINE(_stateFunc_) \
+    static void ST_##_stateFunc_(SM_StateMachine* self, void* pEventData)
 
 #define GUARD_DECLARE(_guardFunc_, _eventData_) \
-    static BOOL GD_##_guardFunc_(SM_StateMachine* self, _eventData_* pEventData);
+    static uint8_t GD_##_guardFunc_(SM_StateMachine* self, _eventData_* pEventData);
 
 #define GUARD_DEFINE(_guardFunc_, _eventData_) \
-    static BOOL GD_##_guardFunc_(SM_StateMachine* self, _eventData_* pEventData)
+    static uint8_t GD_##_guardFunc_(SM_StateMachine* self, _eventData_* pEventData)
 
 #define ENTRY_DECLARE(_entryFunc_, _eventData_) \
     static void EN_##_entryFunc_(SM_StateMachine* self, _eventData_* pEventData);
@@ -168,7 +176,7 @@ void _SM_StateEngineEx(SM_StateMachine* self,
     static const SM_StateStruct _smName_##StateMap[] = { 
 
 #define STATE_MAP_ENTRY(_stateFunc_) \
-    { _stateFunc_ },
+    { ST_##_stateFunc_ },
 
 #define END_STATE_MAP(_smName_) \
     }; \
@@ -192,7 +200,7 @@ void _SM_StateEngineEx(SM_StateMachine* self,
         NULL, _smName_##StateMap };
 
 #define BEGIN_TRANSITION_MAP \
-    static const BYTE TRANSITIONS[] = { \
+    static const uint8_t TRANSITIONS[] = { \
 
 #define TRANSITION_MAP_ENTRY(_entry_) \
     _entry_,
@@ -200,7 +208,6 @@ void _SM_StateEngineEx(SM_StateMachine* self,
 #define END_TRANSITION_MAP(_smName_, _eventData_) \
     }; \
     _SM_ExternalEvent(self, &_smName_##Const, TRANSITIONS[self->currentState], _eventData_); \
-    C_ASSERT((sizeof(TRANSITIONS)/sizeof(BYTE)) == (sizeof(_smName_##StateMap)/sizeof(_smName_##StateMap[0])));
-
+    assert((sizeof(TRANSITIONS)/sizeof(uint8_t)) == (sizeof(_smName_##StateMap)/sizeof(_smName_##StateMap[0])));
 
 #endif /* fms.h */

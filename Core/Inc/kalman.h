@@ -17,14 +17,13 @@
 
 #include "arm_math.h"
 #include "definitions.h"
-#include <stdint.h>
+
 
 #define MATRIX_MAX_SIZE 64
 #define VECTOR_MAX_SIZE 8
 
 /**
- *	@typedef    kalman_filter_status
- *
+ *	@enum       kalman_filter_status
  *	@brief      This typedef defines the state of the kalman filter. It states 
  *	            in which step of the process it has failed	
  */

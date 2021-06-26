@@ -51,3 +51,28 @@ uint32_t get_closest_index_f32(float32_t target, uint32_t index_a,
 	}
 }
 
+uint32_t get_max_index_f32(const float32_t * array_of_values, size_t length)
+{
+	uint32_t max_index = 0;
+
+    for (uint32_t c = 1; c < length; c++){
+        if (array_of_values[c] > array_of_values[max_index]){
+            max_index = c;
+		}
+	}
+
+    return max_index;
+}
+
+uint32_t get_min_index_f32(const float32_t * array_of_values, size_t length)
+{
+	uint32_t min_index = 0;
+
+    for (uint32_t c = 1; c < length; c++){
+        if (array_of_values[c] < array_of_values[min_index]){
+            min_index = c;
+		}
+	}
+
+    return min_index;
+}

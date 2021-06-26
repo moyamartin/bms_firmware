@@ -27,7 +27,10 @@ SRC_FILES=$(PROJECT_DIR)/Core/Src/find.c \
 		  $(PROJECT_DIR)/Core/Src/kalman.c \
 		  $(PROJECT_DIR)/Core/Src/auxiliary_mat.c \
 		  $(PROJECT_DIR)/Core/Src/battery_model.c \
-		  $(PROJECT_DIR)/Core/Src/crc.c
+		  $(PROJECT_DIR)/Core/Src/crc.c \
+		  $(PROJECT_DIR)/Core/Src/fsm_charger.c \
+		  $(PROJECT_DIR)/Core/Src/fsm.c
+
 
 SRC_DIRS=
 

@@ -22,6 +22,8 @@
 #include "bq2461x.h"
 #include "logging.h"
 #include "main.h"
+#include "fsm_balancing.h"
+#include "fsm.h"
 
 I2C_HandleTypeDef hi2c1;
 DMA_HandleTypeDef hdma_i2c1_rx;
@@ -79,6 +81,18 @@ static void handle_bq76_alerts(struct BQ76 * device);
  */
 int main(void)
 {
+
+    /* USER CODE BEGIN 1 */
+
+	static FSM_BALANC FSM_Obj1;
+	SM_DEFINE(Balancer1SM, &FSM_Obj1);
+
+
+	FSM_Obj1.pack= &battery_pack;
+	FSM_Obj1.device=&battery_monitor;
+    /* USER CODE END 1 */
+
+    /* MCU Configuration--------------------------------------------------------*/
 
     /* disable irq */
     __disable_irq();
