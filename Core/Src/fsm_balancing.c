@@ -6,14 +6,14 @@
 
  */
 
-#DEFINE DISBALANCED_THRESHOLD (0.02f)
+#DEFINE UNBALANCED_THRESHOLD (0.02f)
 
 #include "fsm_balancing.h"
 #include "fsm.h"
 #include <stdio.h>
 
 
-bool IsDisbalanced(Struct *Pack pack){
+bool IsUnbalanced(Struct *Pack pack){
     float32_t buffer[SERIES_CELLS];
     uint32_t max_index,min_index;
      for(int i = 0; i < SERIES_CELLS; ++i){
@@ -25,8 +25,8 @@ bool IsDisbalanced(Struct *Pack pack){
     min_index=get_if_index_f32(buffer,SERIES_CELLS);
 
     /*Comparison between the most and the least charged cells if this difference is 
-    bigger than DISBALANCED_THRESHOLD the pack is declared unbalanced*/
-    if ((buffer[max_index]-DISBALANCED_THRESHOLD)>buffer[min_index]){
+    bigger than UNBALANCED_THRESHOLD the pack is declared unbalanced*/
+    if ((buffer[max_index]-UNBALANCED_THRESHOLD)>buffer[min_index]){
         return 1;
     } 
 	else{
@@ -47,7 +47,7 @@ uint8_t Balance_transistors(Struct *Pack pack){
     min_index=get_if_index_f32(buffer,SERIES_CELLS);
     
         for(int i = 0; i < SERIES_CELLS; ++i){
-            if (buffer[min_index]+DISBALANCED_THRESHOLD<buffer[i]){
+            if (buffer[min_index]+UNBALANCE_THRESHOLD<buffer[i]){
                 		
 			transistors = transistors | 1;
 		    }
@@ -107,58 +107,60 @@ EVENT_DEFINE(BALANC_NOT_CV_Charging, NoEventData)
     END_TRANSITION_MAP(FSM_BALANC, pEventData)
 }
 
-// Pack Balanced external event
-EVENT_DEFINE(BALANC_BALANCED_PACK, NoEventData)
+ //Event defined to run current state
+EVENT_DEFINE(BALANC_RUN_CURRENT_STATE, NoEventData)
 {
-    // Given the Balanced Pack event, transition to a new state based upon 
+    // Given NoSpecific event, run the current event 
     // the current state of the state machine
     BEGIN_TRANSITION_MAP                          // - Current State -
-        TRANSITION_MAP_ENTRY(EVENT_IGNORED)       // ST_Idle       
+        TRANSITION_MAP_ENTRY(BALANC_IDLE)       // ST_Idle       
         TRANSITION_MAP_ENTRY(BALANC_DETEC)        // ST_Detecting       
-        TRANSITION_MAP_ENTRY(BALANC_DETEC)        // ST_Balancing     
-    END_TRANSITION_MAP(FSM_BALANC, pEventData)
-}
-
-
-// Pack unbalanced external event
-EVENT_DEFINE(BALANC_UNBALANCED, NoEventData)
-{
-    // Given the Balanced Pack event, transition to a new state based upon 
-    // the current state of the state machine
-    BEGIN_TRANSITION_MAP                          // - Current State -
-        TRANSITION_MAP_ENTRY(EVENT_IGNORED)       // ST_Idle       
-        TRANSITION_MAP_ENTRY(BALANC_EQ)           // ST_Detecting       
-        TRANSITION_MAP_ENTRY(BALANC_EQ)           // ST_Balancing     
+        TRANSITION_MAP_ENTRY(BALANC_EQ)        // ST_Balancing     
     END_TRANSITION_MAP(FSM_BALANC, pEventData)
 }
 
 
 
 
-// State machine sits here when motor is not running
+// State machine sits here when battery is not charging
 STATE_DEFINE(Idle, NoEventData)
 {
     printf("%s ST_Idle\n", self->name);
 }
 
 
-// Start the motor going
+// When the Charger is in CV charging process starts checking Unbalanced Cells
 STATE_DEFINE(Detecting, NoEventData)
 {
-    // Get pointer to the instance data and update currentSpeed
-    //FSM_BALANC* pInstance = SM_GetInstance(FSM_BALANC);
+    // Get pointer to the instance data 
+    FSM_BALANC* pInstance = SM_GetInstance(FSM_BALANC);
     
-    // Set initial motor speed processing here
+    
     printf("%s ST_Detecting: \n", self->name);
+
+    if (IsUnbalanced(pEventData->pack)){
+        SM_InternalEvent(BALANC_EQ, NULL);
+    }
+
 }
 
-// Changes the motor speed once the motor is moving
+// Sets the Balance transistors output of the BQ76
 STATE_DEFINE(Equalizing, NoEventData)
 {
-    // Get pointer to the instance data and update currentSpeed
-    //FSM_BALANC* pInstance = SM_GetInstance(FSM_BALANC);
+    // Get pointer to the instance data
+    FSM_BALANC* pInstance = SM_GetInstance(FSM_BALANC);
+    
+    
 
-    // Perform the change motor speed here
+    bq76_set_balancing_output(pEventData->device, 
+                              Balance_transistors(pEventData->pack))
+    
     printf("%s ST_Equalizing: \n", self->name);
+
+        if (!IsUnbalanced(pEventData->pack)){
+        SM_InternalEvent(BALANC_DETEC, NULL);
+        }
 }
+
+
 

@@ -21,22 +21,26 @@
 // Balancer object structure
 typedef struct
 {
-    INT DummyInt;
+    struct Pack * pack;
+    struct BQ76 * device;
 } FSM_BALANC;
 
+/*
 // Event data structure
 typedef struct
 {
-    INT DummyInt;
+    struct Pack * pack;
+    struct BQ76 * device;
 } FSM_BALANC_Data;
+*/
 
 /**
- *  @fn			IsDisbalanced
+ *  @fn			IsUnbalanced
  *  @brief      Given an Pack structure which contains the SoC of #SERIES_CELLS number of
- *              cells, this will return 1 if the pack is balanced.              
- *  @params[in]	pack: struct Pack to detect disbalance.
+ *              cells, this will return 1 if the pack is unbalanced.              
+ *  @params[in]	pack: struct Pack to detect unbalance.
  */
-bool IsDisbalanced(Struct *Pack pack);
+bool IsUnbalanced(Struct *Pack pack);
 
 /**
  *  @fn			Balance_transistors
@@ -52,8 +56,6 @@ uint8_t Balance_transistors(Struct *Pack pack);
 //state machine event functions
 EVENT_DECLARE(BALANC_CV_Charging,NoEventData)
 EVENT_DECLARE(BALANC_NOT_CV_Charging,NoEventData)
-EVENT_DECLARE(BALANC_BALANCED_PACK,NoEventData)
-EVENT_DECLARE(BALANC_UNBALANCED,NoEventData)
-
+EVENT_DECLARE(BALANC_RUN_CURRENT_STATE, NoEventData)
 
 #endif // _FSM_BALANCER_H
