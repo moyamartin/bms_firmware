@@ -37,6 +37,8 @@
     // it's handled by hw
 	#define BQ76_CS_GPIO BQ76_CS_GPIO_Port
 	#define BQ76_CS_PIN BQ76_CS_Pin
+    #define BQ76_CONV_GPIO BQ76_CONV_GPIO_Port
+    #define BQ76_CONV_PIN BQ76_CONV_Pin
 #elif defined (__AVR__)
 	// AVR devices support
 #endif
@@ -58,6 +60,15 @@ enum BQ76_status {
 	BQ76_OT_CONFIG_FAIL = -13,
 	BQ76_OTT_CONFIG_FAIL = -14,
     BQ76_CRC_MISMATCH = -15,
+    BQ76_SPI_RECEIVE_ERROR = -16,
+};
+
+enum BQ76_DMA_request {
+    BQ76_NO_CONV = 0,
+    BQ76_V_CELLS,
+    BQ76_T_SENSORS,
+    BQ76_FAULT_REG,
+    BQ76_ALERT_REG,
 };
 
 struct BQ76_write_packet_format {
@@ -75,7 +86,8 @@ struct BQ76_read_packet_format {
 };
 
 #define BQ76_TX_BUFF_SIZE sizeof(struct BQ76_write_packet_format)
-#define BQ76_RX_BUFF_LENGTH(length) (sizeof(struct BQ76_write_packet_format) + length)
+#define BQ76_RX_BUFF_LENGTH(length) \
+    (sizeof(struct BQ76_write_packet_format) + length)
 #define BQ76_RX_BUFF_SIZE 12
 
 struct BQ76 {
@@ -101,7 +113,9 @@ struct BQ76 {
 	uint8_t ott_config;
 	uint8_t user_register[4];
     uint8_t data_conversion_ongoing;
+    uint8_t raw_v_cells[13]; /* <- don't forget that this needs one bit extra for th CRC calculation, that's why the double of size */
     float32_t v_cells[6];
+    enum BQ76_DMA_request current_dma_request;
 };
 
 /**
@@ -258,7 +272,7 @@ enum BQ76_status bq76_set_ot_config(struct BQ76 * device, float32_t ot1,
 enum BQ76_status bq76_set_ott_config(struct BQ76 * device, uint16_t delay_time);
 
 /**
- * @func  bq76_read_cells()
+ * @func  bq76_read_v_cells()
  * @brief reads the voltage value of n cells, this function always takes as a
  * starting point the cell 1 and this function should always be called when DRDY
  * pin from the chip is asserted
@@ -269,7 +283,22 @@ enum BQ76_status bq76_set_ott_config(struct BQ76 * device, uint16_t delay_time);
  * @return BQ76_status indicating if the process failed or not
  * @see BQ76
  */
-enum BQ76_status bq76_read_cells(struct BQ76 * device);
+enum BQ76_status bq76_read_v_cells(struct BQ76 * device);
+
+/**
+ * @func  bq76_read_v_cells_dma()
+ * @brief reads the voltage value of n cells, this function always takes as a
+ * starting point the cell 1 and this function should always be called when 
+ * DRDY pin from the chip is asserted. This function is similar to
+ * bq76_read_v_cells but instead it uses the MCUs DMA to fullfil the transaction
+ * @params[in] device: BQ76 pointer referencing to the desired device to be
+ *             modified
+ * @params[in] n_cells: amount of cells to be read by the user, the result is
+ * stored in BQ76->v_cells
+ * @return BQ76_status indicating if the process failed or not
+ * @see BQ76
+ */
+enum BQ76_status bq76_read_v_cells_dma(struct BQ76 * device);
 
 /**
  * @func bq76_rqst_adc_convert
@@ -357,5 +386,14 @@ enum BQ76_status bq76_read_cuv_fault_reg(struct BQ76 * device);
  */
 enum BQ76_status bq76_set_balancing_output(struct BQ76 * device, 
                                            uint8_t transistors);
+
+
+/**
+ * @func    handle_bq76_dma_callback
+ * @brief   handles the bq76 device DMA callback defined by the
+ *          current_dma_request, this function must be called as callback from
+ *          the dma hardware interrupt in the main flow application
+ */
+enum BQ76_status handle_bq76_dma_callback(struct BQ76 * monitor);
 
 #endif /* bq76pl536a.h */

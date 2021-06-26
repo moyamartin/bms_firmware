@@ -28,7 +28,7 @@ git clone --recursive -j8 https://github.com/moyamartin/bms_firmware.git
 The firmware has to be able to accomplish the following goals:
 
 * Estimate the state of charge of the battery using a Kalman Filter and an
-  electrical model of a 18650PF (Work in progress [WIP]).
+  electrical model of a 18650PF (Under test).
 * Device drivers for the peripherals of the BMS in order to get the following information:
     * Discharge/charge current
     * Cell voltage

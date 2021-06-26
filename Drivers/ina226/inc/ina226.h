@@ -55,7 +55,21 @@ enum INA226_status {
 	INA226_CAL_ERROR = -6,
 	INA226_MASK_EN_ERROR = -7,
 	INA226_FLAGS_NOT_CLEARED = -8,
+    INA226_DMA_NOT_RECOGNIZED = -9,
 };
+
+/**
+ * @enum    INA226_DMA_request
+ * @brief   defines several possible status of the ina226 DMA request
+ */
+enum INA226_dma_request {
+    INA226_NO_DMA_REQUEST = 0,
+    INA226_DMA_CURRENT,
+    INA226_DMA_VBUS,
+    INA226_DMA_VSHUNT,
+    INA226_DMA_PWR,
+};
+
 
 struct INA226_buff {
 	uint8_t reg_address;
@@ -74,6 +88,12 @@ struct INA226 {
 	float32_t r_shunt;
 	float32_t max_expected_current;
 	float32_t current_LSB;
+    float32_t pwr;
+    float32_t v_shunt;
+    float32_t v_bus;
+    float32_t current;
+    uint16_t dma_buffer; /*< this buffer then is handled by the dma callback */
+    enum INA226_dma_request dma_request;
 };
 
 
@@ -124,8 +144,17 @@ enum INA226_status ina226_reset(struct INA226 * ina226);
  * @returns INA226_status indicating if the operation was successful or not
  * 			[OK|I2C_TRANSMISSION_ERROR]
  */
-enum INA226_status ina226_get_current(struct INA226 * ina226, 
-									  float32_t * current);
+enum INA226_status ina226_get_current(struct INA226 * ina226);
+
+/**
+ * @func    ina226_get_current_dma
+ * @brief   Reads the ina226 current register using the MCU's DMA
+ * @params[in] ina226: INA226 struct instance that holds the data structure for
+ * 			   the sensor
+ * @returns INA226_status indicating if the operation was successful or not
+ * 			[OK|I2C_TRANSMISSION_ERROR]
+ */
+enum INA226_status ina226_get_current_dma(struct INA226 * ina226);
 
 /**
  * @func ina226_get_vbus
@@ -135,18 +164,38 @@ enum INA226_status ina226_get_current(struct INA226 * ina226,
  * @returns INA226_status indicating if the operation was successful or not
  * 			[OK|I2C_TRANSMISSION_ERROR]
  */
-enum INA226_status ina226_get_vbus(struct INA226 * ina226, float32_t * vbus);
+enum INA226_status ina226_get_vbus(struct INA226 * ina226);
 
 /**
- * @func ina226_get_vbus
- * @brief Reads the ina226 vbus register and gets the avg measured value
+ * @func ina226_get_vbus_dma
+ * @brief Reads the ina226 vbus register and the avg measured value using the
+ *        MCU's DMA
  * @params[in] ina226: INA226 struct instance that holds the data structure for
  * 			   the sensor
  * @returns INA226_status indicating if the operation was successful or not
  * 			[OK|I2C_TRANSMISSION_ERROR]
  */
-enum INA226_status ina226_get_vshunt(struct INA226 * ina226, 
-									 float32_t * vshunt);
+enum INA226_status ina226_get_vbus_dma(struct INA226 * ina226);
+
+/**
+ * @func ina226_get_vshunt
+ * @brief Reads the ina226 vshunt register and gets the avg measured value
+ * @params[in] ina226: INA226 struct instance that holds the data structure for
+ * 			   the sensor
+ * @returns INA226_status indicating if the operation was successful or not
+ * 			[OK|I2C_TRANSMISSION_ERROR]
+ */
+enum INA226_status ina226_get_vshunt(struct INA226 * ina226);
+
+/**
+ * @func ina226_get_vshunt_dma
+ * @brief Reads the ina226 vshunt register and gets the avg measured value
+ * @params[in] ina226: INA226 struct instance that holds the data structure for
+ * 			   the sensor
+ * @returns INA226_status indicating if the operation was successful or not
+ * 			[OK|I2C_TRANSMISSION_ERROR]
+ */
+enum INA226_status ina226_get_vshunt_dma(struct INA226 * ina226);
 
 /**
  * @func ina226_get_pwr
@@ -156,7 +205,18 @@ enum INA226_status ina226_get_vshunt(struct INA226 * ina226,
  * @returns INA226_status indicating if the operation was successful or not
  * 			[OK|I2C_TRANSMISSION_ERROR]
  */
-enum INA226_status ina226_get_pwr(struct INA226 * ina226, float32_t * pwr);
+enum INA226_status ina226_get_pwr(struct INA226 * ina226);
+
+/**
+ * @func    ina226_get_pwr_dma
+ * @brief   Reads the ina226 pwr register and gets the avg measured value using
+ *          the MCUs DMA
+ * @params[in] ina226: INA226 struct instance that holds the data structure for
+ * 			   the sensor
+ * @returns INA226_status indicating if the operation was successful or not
+ * 			[OK|I2C_TRANSMISSION_ERROR]
+ */
+enum INA226_status ina226_get_pwr_dma(struct INA226 * ina226);
 
 /**
  * @func ina226_set_avg
@@ -237,5 +297,16 @@ enum INA226_status ina226_set_calibration(struct INA226 * ina226,
  */
 enum INA226_status ina226_set_mask_enable(struct INA226 * ina226, 
 									 	  enum INA226_mask_enable maks_enable);
+
+/**
+ * @func    ina226_handle_dma_callback
+ * @brief   This function should be called on the callback of the DMA operation
+ *          when running a function related to the MCU's DMA.
+ */
+enum INA226_status handle_ina226_dma_callback(struct INA226 * ina226);
+
+void bq76_hwrqst_adc_convert();
+
+void bq76_assert_end_adc_convert();
 
 #endif /* ina226.h */

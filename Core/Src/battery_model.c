@@ -22,8 +22,13 @@ static void update_filter_params(struct KalmanFilter * filter,
 	kalman_filter_modify_j_data(filter, &D_LUT[soc_index]);
 }
 
-arm_status init_battery_model(struct Cell * cell, 
-							  float32_t open_circuit_voltage)
+float32_t cell_model_get_soc(struct Cell * cell)
+{
+    return cell->filter.x_act_data[2];
+}
+
+cell_status init_cell_model(struct Cell * cell, 
+						    const float32_t open_circuit_voltage)
 {
 	/* 
 	 * At the battery model startup, we are considering we have the OCV (Open
@@ -39,30 +44,31 @@ arm_status init_battery_model(struct Cell * cell,
 	};
 
 	// Initializes kalman filter with the battery data from the current index
-	return kalman_filter_init(&cell->filter, initial_state, 
-			   				  F_LUT[cell->current_soc_index], 
-							  G_LUT[cell->current_soc_index], 
-							  H_LUT[cell->current_soc_index], 
-							  pre_calc_q,
-							  pre_calc_p,
-							  pre_calc_r,
-							  NULL, 
-							  &D_LUT[cell->current_soc_index], 
-							  N_STATES, N_INPUTS, N_OUTPUTS);
+	if(kalman_filter_init(&cell->filter, initial_state, 
+                          F_LUT[cell->current_soc_index],
+                          G_LUT[cell->current_soc_index], 
+					      H_LUT[cell->current_soc_index], 
+					      pre_calc_q, pre_calc_p, pre_calc_r, NULL, 
+						  &D_LUT[cell->current_soc_index], N_STATES, N_INPUTS, 
+                          N_OUTPUTS) == KALMAN_FAILED_INIT){
+        return CELL_INIT_FAILED;
+    }
+    return CELL_INIT_SUCCESS;
 }
 
-void battery_model_set_q_data(struct Cell * cell, const float32_t * q_data)
+
+void battery_cell_set_q_data(struct Cell * cell, const float32_t * q_data)
 {
 	kalman_filter_modify_q_data(&cell->filter, q_data);
 }
 
 
-void battery_model_set_r_data(struct Cell * cell, const float32_t * r_data)
+void battery_cell_set_r_data(struct Cell * cell, const float32_t * r_data)
 {
 	kalman_filter_modify_r_data(&cell->filter, r_data);
 }
 
-float32_t calculate_battery_soc(struct Cell * cell, float32_t voltage, 
+float32_t calculate_cell_soc(struct Cell * cell, float32_t voltage, 
 								float32_t current)
 {
 	kalman_filter_modify_u_data(&cell->filter, &current);
@@ -75,10 +81,5 @@ float32_t calculate_battery_soc(struct Cell * cell, float32_t voltage,
 	}
 							  
 	// returns the current soc of the battery
-	return cell->filter.x_act_data[2];
-}
-
-float32_t battery_model_get_soc(struct Cell * cell)
-{
 	return cell->filter.x_act_data[2];
 }
