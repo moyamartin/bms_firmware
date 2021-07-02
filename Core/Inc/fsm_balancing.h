@@ -25,29 +25,19 @@ typedef struct
     struct BQ76 * device;
 } FSM_BALANC;
 
-/*
-// Event data structure
-typedef struct
-{
-    struct Pack * pack;
-    struct BQ76 * device;
-} FSM_BALANC_Data;
-*/
-
 /**
- *  @fn			IsUnbalanced
  *  @brief      Given an Pack structure which contains the SoC of #SERIES_CELLS number of
- *              cells, this will return 1 if the pack is unbalanced.              
- *  @params[in]	pack: struct Pack to detect unbalance.
+ *              cells. Returns 1 if the diference between the SoC of the most and the least charged cell in the pack is greater than 2%. 
+ *                        
+ *  @param[in]	pack: struct Pack to detect unbalance.
  */
 BOOL IsUnbalanced(struct Pack *pack);
 
 /**
- *  @fn			Balance_transistors
  *  @brief      Given an Pack structure which contains the SoC of #SERIES_CELLS number of
  *              cells, this will return an uint8_t whose internal bit correspond to the
  *              ByPass Transistors to be activated for balancing purposes              
- *  @params[in]	pack: struct Pack to set ByPass Transistors.
+ *  @param[in]	pack: struct Pack to set ByPass Transistors.
  */
 uint8_t Balance_transistors(struct Pack *pack);
 
