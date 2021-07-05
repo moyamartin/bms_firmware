@@ -25,6 +25,10 @@
 #include "fsm_balancing.h"
 #include "fsm.h"
 
+//this is needed to show messages in the debugging console
+extern void initialise_monitor_handles(void);
+
+
 I2C_HandleTypeDef hi2c1;
 DMA_HandleTypeDef hdma_i2c1_rx;
 DMA_HandleTypeDef hdma_i2c1_tx;
@@ -147,6 +151,9 @@ int main(void)
     // start TIM3 -> 9525ms
     HAL_TIM_Base_Start_IT(&htim3);
 
+    //this is needed to show messages in the debugging console
+    initialise_monitor_handles();
+
     while (1)
     {
         if(new_v_cell_data && new_current_data){
@@ -157,20 +164,17 @@ int main(void)
             calc_battery_pack_soc(&battery_pack, battery_monitor.v_cells, 
                                   current_sensor.current);
        }
- /*
-  * Don´t delete
-      //Given a determinate state of the charger an FSM_BALANC machine event is selected
+        // Don´t delete
+            //Given a determinate state of the charger an FSM_BALANC machine event is selected
 
-        //No operational changes, running the current state
-        SM_Event(Balancer1SM, BALANC_RUN_CURRENT_STATE, NULL);
+              //No operational changes, running the current state
+              SM_Event(Balancer1SM, BALANC_RUN_CURRENT_STATE, NULL);
 
-        //CC_CV charge has started
-        SM_Event(Balancer1SM, BALANC_DETEC, NULL);
+              //CC_CV charge has started
+              SM_Event(Balancer1SM,BALANC_CV_Charging, NULL);
 
-        //CC_CV charge has ended
-        SM_Event(Balancer1SM, BALANC_EQ, NULL);
-
-        */
+              //CC_CV charge has ended
+              SM_Event(Balancer1SM,BALANC_NOT_CV_Charging, NULL);
     }
 }
 

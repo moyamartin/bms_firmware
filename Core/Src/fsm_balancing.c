@@ -14,6 +14,7 @@
 #include "find.h"
 #include "battery_model.h"
 #include "bq76pl536a.h"
+#include "logging.h"
 
 BOOL IsUnbalanced(struct Pack *pack){
     float32_t buffer[SERIES_CELLS];
@@ -125,7 +126,8 @@ EVENT_DEFINE(BALANC_RUN_CURRENT_STATE, NoEventData)
 // State machine sits here when battery is not charging
 STATE_DEFINE(Idle)
 {
-    printf("%s ST_Idle\n", self->name);
+    //printf("%s ST_Idle\n", self->name);
+	_DEBUG("%s ST_Idle\n", self->name);
 }
 
 
@@ -136,8 +138,8 @@ STATE_DEFINE(Detecting)
     FSM_BALANC* pInstance = SM_GetInstance(FSM_BALANC);
     
     
-    printf("%s ST_Detecting: \n", self->name);
-
+    //printf("%s ST_Detecting: \n", self->name);
+    _DEBUG("%s ST_Detecting: \n", self->name);
     if (IsUnbalanced(pInstance->pack)){
         SM_InternalEvent(BALANC_EQ, NULL);
     }
@@ -155,9 +157,11 @@ STATE_DEFINE(Equalizing)
     bq76_set_balancing_output(pInstance->device,
                               Balance_transistors(pInstance->pack));
     
-    printf("%s ST_Equalizing: \n", self->name);
+    //printf("%s ST_Equalizing: \n", self->name);
+    _DEBUG("%s ST_Equalizing: \n", self->name);
 
         if (!IsUnbalanced(pInstance->pack)){
+            bq76_set_balancing_output(pInstance->device,0);
         SM_InternalEvent(BALANC_DETEC, NULL);
         }
 }
