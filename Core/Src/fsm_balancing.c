@@ -152,18 +152,28 @@ STATE_DEFINE(Equalizing)
     // Get pointer to the instance data
     FSM_BALANC* pInstance = SM_GetInstance(FSM_BALANC);
     
-    
-
-    bq76_set_balancing_output(pInstance->device,
-                              Balance_transistors(pInstance->pack));
-    
     //printf("%s ST_Equalizing: \n", self->name);
     _DEBUG("%s ST_Equalizing: \n", self->name);
 
-        if (!IsUnbalanced(pInstance->pack)){
-            bq76_set_balancing_output(pInstance->device,0);
-        SM_InternalEvent(BALANC_DETEC, NULL);
-        }
+    if(BQ76_SPI_TRANSMISSION_ERROR==bq76_set_balancing_output(pInstance->device,
+                              Balance_transistors(pInstance->pack))){
+    	_DEBUG("Falla de escritura en periférico BQ76 para Balanceo \n");
+    }
+    else{
+    	_DEBUG("Activación transistor de bypass Exitosa \n");
+    }
+
+    //If the pack is already balanced go back to detection state
+    if (!IsUnbalanced(pInstance->pack)){
+       if(BQ76_SPI_TRANSMISSION_ERROR==bq76_set_balancing_output(pInstance->device,0)){
+    	   _DEBUG("Falla de escritura en periférico BQ76 para DESACTIVAR Balanceo \n");
+       }
+       else{
+    	   _DEBUG("Reseteo Transistores de bypass Exitoso \n");
+       }
+
+    SM_InternalEvent(BALANC_DETEC, NULL);
+    }
 }
 
 

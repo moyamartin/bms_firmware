@@ -164,6 +164,12 @@ int main(void)
             calc_battery_pack_soc(&battery_pack, battery_monitor.v_cells, 
                                   current_sensor.current);
        }
+
+
+        //Overwriting the SOC for testing
+        for (int i = 0; i < SERIES_CELLS; i++) {
+            battery_pack.cells[i].filter.x_act_data[2] = 1.0f;
+        }
         // Don´t delete
             //Given a determinate state of the charger an FSM_BALANC machine event is selected
 
