@@ -7,9 +7,7 @@
  */
 
 #define UNBALANCED_THRESHOLD (0.02f)
-#include "DataTypes.h"
 #include "fsm_balancing.h"
-#include "fsm.h"
 #include <stdio.h>
 #include "find.h"
 #include "battery_model.h"
