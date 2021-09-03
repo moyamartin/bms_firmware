@@ -32,12 +32,12 @@ The firmware has to be able to accomplish the following goals:
 * Device drivers for the peripherals of the BMS in order to get the following information:
     * Discharge/charge current
     * Cell voltage
+* Unbalanced cell detector
+* Finite-state machine for handling charge/discharge phases
 * Communicate the current status of the battery pack via CAN bus or
-  RS232 protocol (WIP)
-* Handle failure interruptions and trigger the load switch for protection (WIP)
+  RS232 protocol
+* Handle failure interruptions and trigger the load switch for protection
 * Handle the battery charger indicators (WIP)
-* Unbalanced cell detector (WIP)
-* Finite-state machine for handling charge/discharge phases (WIP)
 
 ## Requirements
 
