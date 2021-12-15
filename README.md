@@ -1,4 +1,4 @@
-# Battery Management System (BMS) - Firmware
+# Battery Management System (BMS) - Firmware [![CI - STM32](https://github.com/moyamartin/bms_firmware/actions/workflows/c-cpp.yml/badge.svg)](https://github.com/moyamartin/bms_firmware/actions/workflows/c-cpp.yml)
 
 This is the firmware dev section of the [BMS project](https://github.com/moyamartin/bms_unr), as the [hardware section](https://github.com/moyamartin/bms_hardware) states, the brain of the BMS is based on a [STM32F407VGTx](https://www.st.com/en/microcontrollers-microprocessors/stm32f407vg.html) microcontroller unit.
 
